@@ -26,9 +26,9 @@ DEMO_MESSAGES = [
 ]
 
 
-def seed_slots(db, days: int = 6):
+def seed_slots(db, days: int = 6, from_day: int = 0):
     start = now().replace(minute=0, second=0)
-    for d in range(days):
+    for d in range(from_day, from_day + days):
         day = (start + timedelta(days=d)).replace(hour=9)
         for doctor, specialty in DOCTORS:
             for i in range(0, 12 * 4):  # 9:00 to 21:00, every 15 min
@@ -41,16 +41,29 @@ def seed_slots(db, days: int = 6):
     db.commit()
 
 
+def top_up_slots(db, ahead_days: int = 6):
+    """Keep a week of future slots, so a long-lived database never runs dry."""
+    last = db.scalar(select(func.max(Slot.starts_at)))
+    today = now().date()
+    if last is None:
+        seed_slots(db, ahead_days)
+        return
+    have_until = (last.date() - today).days
+    if have_until < ahead_days - 1:
+        start = max(have_until + 1, 0)
+        seed_slots(db, ahead_days - start, from_day=start)
+
+
 def seed(reset: bool = False):
     if reset:
         Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
-        if db.scalar(select(func.count(Slot.id))):
-            return
-        seed_slots(db)
-        for phone, name, msg in DEMO_MESSAGES:
-            create_intake(db, phone, name, msg, "whatsapp")
+        empty = not db.scalar(select(func.count(Slot.id)))
+        top_up_slots(db)
+        if empty:
+            for phone, name, msg in DEMO_MESSAGES:
+                create_intake(db, phone, name, msg, "whatsapp")
 
 
 if __name__ == "__main__":

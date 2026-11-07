@@ -38,14 +38,27 @@ from .triage import rules_triage, triage
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI):
+def _init_db():
     Base.metadata.create_all(engine)
     if os.getenv("SEED_DEMO", "1") == "1":
         from .seed import seed
 
         seed()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    if not os.getenv("VERCEL"):
+        _init_db()
     yield
+
+
+# Serverless platforms may not run lifespan events, so set up on import there.
+if os.getenv("VERCEL"):
+    try:
+        _init_db()
+    except Exception:  # never stop the API from starting; /api/health will show the error
+        logging.getLogger("sehat").exception("Database setup failed")
 
 
 app = FastAPI(

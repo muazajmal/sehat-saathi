@@ -7,8 +7,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _database_url() -> str:
+    """DATABASE_URL, normalised for SQLAlchemy + psycopg 3.
+
+    Vercel's Neon integration hands out postgres:// URLs; SQLAlchemy needs
+    postgresql+psycopg://. On Vercel without a database, fall back to SQLite
+    in /tmp (the only writable folder there) so the app still starts.
+    """
+    url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or ""
+    if not url:
+        return "sqlite:////tmp/sehat.db" if os.getenv("VERCEL") else "sqlite:///./sehat.db"
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
 class Settings:
-    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./sehat.db")
+    database_url: str = _database_url()
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     whatsapp_token: str = os.getenv("WHATSAPP_TOKEN", "")

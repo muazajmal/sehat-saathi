@@ -62,9 +62,14 @@ All optional. Everything runs without them; outbound messages are logged instead
 | `N8N_ESCALATION_WEBHOOK` | Urgent cases POST here so n8n can call the duty doctor (Retell AI / Twilio). |
 | `DATABASE_URL` | Supabase Postgres instead of SQLite (see `.env.example` for the format). |
 
-For a public URL during the hackathon, run `ngrok http 8000` (or deploy the backend to Render/Railway and
-the frontend to Vercel, setting `NEXT_PUBLIC_API_URL` to the backend URL and adding the Vercel URL to
-`CORS_ORIGINS`).
+**Deploying (free, no card):** two Vercel projects from this repo.
+
+- `sehat-saathi-api`: root directory `backend` (FastAPI, entry `index.py`). Add a free Neon Postgres from
+  Vercel → Storage so `DATABASE_URL` is set; without it the API falls back to SQLite in `/tmp`, which resets often.
+  Optional: `GEMINI_API_KEY`.
+- `sehat-saathi`: root directory `frontend` (Next.js), with `NEXT_PUBLIC_API_URL` set to the API's URL.
+
+CORS already allows any `https://sehat-saathi*.vercel.app` origin (`CORS_ORIGIN_REGEX`).
 
 ## Safety design (say this in the pitch)
 
