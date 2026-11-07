@@ -1,0 +1,24 @@
+# Render Blueprint: the FastAPI backend on the free plan.
+# SQLite resets when the free instance sleeps or redeploys, and the demo data is re-seeded on start.
+services:
+  - type: web
+    name: sehat-saathi-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: SEED_DEMO
+        value: "1"
+      - key: CLINIC_NAME
+        value: Shifa Family Clinic
+      - key: CLINIC_TZ
+        value: Asia/Karachi
