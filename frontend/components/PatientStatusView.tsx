@@ -17,6 +17,8 @@ import {
 } from "../lib/api";
 import { T } from "../lib/patientText";
 import { EmergencyBar, PatientHeader, useClinicName, usePatientLang } from "./PatientPortal";
+import InstallApp from "./InstallApp";
+import ReadAloud from "./ReadAloud";
 
 export default function PatientStatusView() {
   const params = useSearchParams();
@@ -133,6 +135,7 @@ export default function PatientStatusView() {
             <p className={`p-reply ${replyScript}`} dir={replyScript ? "rtl" : "auto"}>
               {st.reply}
             </p>
+            <ReadAloud text={st.reply} language={st.language} label={t.listen} stopLabel={t.stopListening} />
             <ol className="p-steps">
               <li className="done">{t.received}</li>
               {st.status === "pending_review" && <li className="now">{t.reviewing}</li>}
@@ -193,12 +196,21 @@ export default function PatientStatusView() {
             >
               {copied ? t.copied : t.copy}
             </button>
+            <a
+              className="btn btn-quiet p-wa"
+              href={typeof window === "undefined" ? "#" : `https://wa.me/?text=${encodeURIComponent(`${t.waText} ${window.location.href}`)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t.whatsapp}
+            </a>
             <Link className="btn btn-quiet" href="/patient">
               {t.another}
             </Link>
           </section>
         </>
       )}
+      <InstallApp lang={lang} />
       <p className="p-foot">{t.notDiagnosis}</p>
     </main>
   );

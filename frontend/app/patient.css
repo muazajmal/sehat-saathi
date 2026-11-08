@@ -432,3 +432,95 @@
 @media (max-width: 380px) {
   .a-types { grid-template-columns: 1fr; }
 }
+
+/* ---------- one-tap symptoms ---------- */
+.qp { display: grid; gap: 16px; margin: 10px 0 18px; }
+.qp fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.qp legend { padding: 0; margin-bottom: 8px; font-weight: 600; font-size: 0.9375rem; }
+.qp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.qp-chips.tight { flex-wrap: nowrap; }
+.qp-chip {
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+.qp-chip[aria-pressed="true"] { border-color: var(--mint); background: var(--teal-soft); color: var(--mint); font-weight: 600; }
+.qp-chip.danger[aria-pressed="true"] { border-color: var(--urgent); background: var(--urgent-bg); color: var(--urgent); }
+.qp-age { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.p-card .qp-age label { margin: 0; white-space: nowrap; }
+.p-card .qp-age input { width: 84px; margin: 0; text-align: center; }
+.qp-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.qp-tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  text-align: start;
+  cursor: pointer;
+}
+.patient[dir="rtl"] .qp-tile { line-height: 1.9; }
+.qp-icon { font-size: 1.5rem; flex: none; }
+.qp-tile[aria-pressed="true"] { border-color: var(--mint); background: var(--teal-soft); font-weight: 600; }
+.qp-tile.danger[aria-pressed="true"] { border-color: var(--urgent); background: var(--urgent-bg); }
+.qp-follow { padding: 12px !important; border-radius: 14px !important; border: 1px dashed var(--line-strong) !important; }
+.qp-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 122, 131, 0.55);
+  background: var(--urgent-bg);
+  color: #ffd2d5;
+  font-weight: 600;
+}
+.p-card h2.qp-or { margin: 4px 0 2px; font-size: 1rem; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* ---------- voice ---------- */
+.voice { margin-bottom: 10px; }
+.voice-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  border-radius: 14px;
+  border: 1px solid rgba(95, 227, 196, 0.45);
+  background: var(--teal-soft);
+  color: var(--mint);
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.voice-btn:disabled { opacity: 0.7; cursor: progress; }
+.voice-btn.on { border-color: var(--urgent); background: var(--urgent-bg); color: var(--urgent); }
+.voice-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--urgent); animation: voice-blink 1s ease-in-out infinite; }
+@keyframes voice-blink { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .voice-dot { animation: none; } }
+.voice p { margin: 6px 0 0; }
+.voice-err { color: var(--urgent); }
+
+/* ---------- status page extras ---------- */
+.p-speak { margin-top: 4px; }
+.p-wa { border-color: rgba(37, 211, 102, 0.5) !important; color: #6ee7a0 !important; }
+.p-install { display: flex; gap: 14px; align-items: flex-start; }
+.p-install img { border-radius: 12px; flex: none; }
+.p-install p { margin: 4px 0 10px; }
+.p-install-row { display: flex; gap: 12px; align-items: center; }

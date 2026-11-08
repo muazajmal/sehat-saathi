@@ -4,6 +4,22 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class QuickIn(BaseModel):
+    """One-tap answers from the patient website. Unknown keys are ignored."""
+    for_whom: Literal["self", "child", "parent", "other"] | None = None
+    age: int | None = Field(default=None, ge=0, le=120)
+    age_unit: Literal["years", "months"] = "years"
+    symptoms: list[str] = Field(default_factory=list, max_length=10)
+    answers: list[str] = Field(default_factory=list, max_length=30)
+    since: Literal["today", "days", "week"] | None = None
+
+
+class TranscribeIn(BaseModel):
+    audio_b64: str = Field(min_length=100, max_length=3_500_000)  # about 60s of 16 kHz WAV
+    mime: Literal["audio/wav"] = "audio/wav"
+    ui_lang: Literal["ur", "en"] = "ur"
+
+
 class IntakeIn(BaseModel):
     phone: str = Field(min_length=6, max_length=32, examples=["+923001234567"])
     name: str = Field(default="", max_length=120)
@@ -13,6 +29,7 @@ class IntakeIn(BaseModel):
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     location_label: str = Field(default="", max_length=200)
+    quick: QuickIn | None = None
 
 
 class SlotOut(BaseModel):

@@ -57,7 +57,8 @@ def case_payload(case: Case) -> dict:
     }
 
 
-def create_intake(db: Session, phone: str, name: str, message: str, channel: str) -> Case:
+def create_intake(db: Session, phone: str, name: str, message: str, channel: str,
+                  quick_answers: dict | None = None) -> Case:
     patient = db.scalar(select(Patient).where(Patient.phone == phone))
     if patient is None:
         patient = Patient(phone=phone, name=name or "", created_at=now())
@@ -67,6 +68,10 @@ def create_intake(db: Session, phone: str, name: str, message: str, channel: str
         patient.name = name
 
     result = triage(message)
+    if quick_answers:
+        from . import quick
+
+        result = quick.apply(result, quick_answers)
 
     case = Case(
         patient_id=patient.id,

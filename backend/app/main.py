@@ -22,6 +22,7 @@ from .config import settings
 from .db import Base, engine, get_db
 from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
 from .schemas import (
+    TranscribeIn,
     AmbulanceIn,
     AmbulanceOnlineIn,
     AmbulanceOut,
@@ -132,7 +133,8 @@ def staff_check():
 @app.post("/api/intake", response_model=IntakeOut, status_code=201)
 def intake(body: IntakeIn, db: Session = Depends(get_db)):
     """A patient message from any channel (patient website, demo, n8n). Public."""
-    case = services.create_intake(db, body.phone.strip(), body.name.strip(), body.message.strip(), body.channel)
+    case = services.create_intake(db, body.phone.strip(), body.name.strip(), body.message.strip(), body.channel,
+                                  body.quick.model_dump() if body.quick else None)
     if body.lat is not None and body.lng is not None:
         dispatch.set_location(db, case.id, body.lat, body.lng, body.location_label, "web")
     token = patient.issue_token(db, case.id)
@@ -142,6 +144,15 @@ def intake(body: IntakeIn, db: Session = Depends(get_db)):
          "status_link": patient.status_link(case.id, token)}
     )
     return out
+
+
+@app.post("/api/transcribe")
+def transcribe(body: TranscribeIn):
+    """Voice note from the patient website -> text, so people can speak instead of typing.
+    The text goes back into the form for the patient to check before sending."""
+    from . import voice
+
+    return {"text": voice.transcribe(body.audio_b64, body.mime, body.ui_lang)}
 
 
 @app.get("/api/patient/status", response_model=PatientStatusOut)

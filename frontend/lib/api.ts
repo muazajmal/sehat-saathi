@@ -366,8 +366,10 @@ export const api = {
   lead: (body: { name: string; clinic: string; city: string; phone: string; size: string }) =>
     call<{ id: number }>("/api/leads", { method: "POST", body: JSON.stringify(body) }),
   audit: (caseId: number) => call<AuditEvent[]>(`/api/audit?case_id=${caseId}`),
-  intake: (phone: string, name: string, message: string) =>
-    call<IntakeResult>("/api/intake", { method: "POST", body: JSON.stringify({ phone, name, message, channel: "web" }) }),
+  intake: (phone: string, name: string, message: string, quick?: object) =>
+    call<IntakeResult>("/api/intake", { method: "POST", body: JSON.stringify({ phone, name, message, channel: "web", quick }) }),
+  transcribe: (audio_b64: string, ui_lang: "ur" | "en") =>
+    call<{ text: string }>("/api/transcribe", { method: "POST", body: JSON.stringify({ audio_b64, mime: "audio/wav", ui_lang }) }),
   patientStatus: (c: number, t: string) =>
     call<PatientStatus>(`/api/patient/status?c=${c}&t=${encodeURIComponent(t)}`),
   patientLocation: (c: number, t: string, lat: number, lng: number, label: string) =>

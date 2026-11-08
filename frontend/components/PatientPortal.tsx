@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError, type Prices } from "../lib/api";
 import { loadLang, myRequests, rememberRequest, saveLang, T, type MyRequest, type UiLang } from "../lib/patientText";
+import { composeMessage, EMPTY_QUICK, hasQuick, QT, quickPayload, type QuickState } from "../lib/quickText";
+import InstallApp from "./InstallApp";
 import Logo from "./Logo";
+import QuickPick from "./QuickPick";
+import VoiceButton from "./VoiceButton";
 
 // Pakistani mobile numbers: 03xx xxxxxxx, +92 3xx xxxxxxx or 92 3xx…
 export function normalisePhone(raw: string): string | null {
@@ -82,6 +86,8 @@ export default function PatientPortal() {
   const [error, setError] = useState<string | null>(null);
   const [mine, setMine] = useState<MyRequest[]>([]);
   const [prices, setPrices] = useState<Prices | null>(null);
+  const [quick, setQuick] = useState<QuickState>(EMPTY_QUICK);
+  const ready = message.trim().length >= 3 || hasQuick(quick);
 
   useEffect(() => {
     setMine(myRequests());
@@ -99,8 +105,9 @@ export default function PatientPortal() {
     setBusy(true);
     setError(null);
     try {
-      const c = await api.intake(p, name.trim(), message.trim());
-      rememberRequest({ c: c.id, t: c.access_token, at: c.created_at, preview: message.trim().slice(0, 60) });
+      const full = composeMessage(quick, lang, message);
+      const c = await api.intake(p, name.trim(), full, quickPayload(quick));
+      rememberRequest({ c: c.id, t: c.access_token, at: c.created_at, preview: full.slice(0, 60) });
       router.push(`/patient/status?c=${c.id}&t=${encodeURIComponent(c.access_token)}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again, or call 1122 if it is an emergency.");
@@ -115,16 +122,17 @@ export default function PatientPortal() {
 
       <form className="p-card" onSubmit={submit}>
         <h1>{t.formTitle}</h1>
+        <QuickPick lang={lang} value={quick} onChange={setQuick} />
+        <h2 className="qp-or">{QT[lang].orWrite}</h2>
         <p className="p-muted">{t.formHint}</p>
+        <VoiceButton lang={lang} onText={(said) => setMessage((m) => (m.trim() ? `${m.trim()}\n${said}` : said))} />
         <textarea
           className={lang === "ur" ? "urdu-input" : ""}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder={t.placeholder}
           dir="auto"
-          rows={5}
-          required
-          minLength={3}
+          rows={4}
           maxLength={2000}
           aria-label={t.formTitle}
         />
@@ -156,7 +164,7 @@ export default function PatientPortal() {
           <span>{t.consent(clinic || "Sehat Saathi")}</span>
         </label>
         {error && <div className="error">{error}</div>}
-        <button className="btn btn-primary p-submit" type="submit" disabled={busy || !consent || message.trim().length < 3 || !phone.trim()}>
+        <button className="btn btn-primary p-submit" type="submit" disabled={busy || !consent || !ready || !phone.trim()}>
           {busy ? t.sending : t.submit}
         </button>
         <p className="p-muted small">{t.trust}</p>
@@ -178,6 +186,7 @@ export default function PatientPortal() {
         </section>
       )}
 
+      <InstallApp lang={lang} />
       <p className="p-foot">{t.notDiagnosis}</p>
     </main>
   );
