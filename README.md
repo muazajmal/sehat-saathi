@@ -75,6 +75,11 @@ status link (`/patient/status`) showing the doctor's decision and, if a responde
 live. Responders get their own private link (`/responder`) to share GPS from their phone; the desk shows the
 distance and arrival time to the patient and the hospital. Demo responders are simulated (labelled, sped up).
 
+**Pay after service:** asking for help, triage and 1122 advice are always free. A transport fee is added only when a
+trip reaches hospital (`TRANSPORT_BASE_PKR` + `TRANSPORT_PER_KM_PKR` per km for the patient-to-hospital leg, default
+Rs 300 + Rs 40/km); staff add a visit fee (`VISIT_FEE_PKR`, default Rs 500) only after a visit is booked. Staff mark
+fees paid (cash, JazzCash, Easypaisa, card, Sehat Card) or waive them; the patient sees the amount on their status page.
+
 **Staff access code:** set `STAFF_KEY` on the API to lock the clinic desk and all patient data. Patient and
 responder pages only ever see their own case through their private links. Leave `STAFF_KEY` empty only for demos
 with sample data.

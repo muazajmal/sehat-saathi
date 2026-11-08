@@ -639,7 +639,7 @@ textarea {
 
 .statline {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 12px;
   padding: 0 32px 20px;
 }
@@ -1595,3 +1595,74 @@ a.sslot:hover {
   font: inherit;
 }
 
+
+/* Payment after service */
+.payment .fees {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.payment .fee {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.payment .fee-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: baseline;
+}
+.payment .fee-main b {
+  font-size: 1.0625rem;
+}
+.payment .fee-main span {
+  color: var(--muted);
+}
+.payment .fee-tag {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+}
+.payment .fee-tag.due {
+  color: var(--today) !important;
+  border-color: rgba(255, 194, 102, 0.45);
+}
+.payment .fee-tag.paid {
+  color: var(--mint) !important;
+  border-color: rgba(95, 227, 196, 0.45);
+}
+.payment .fee-actions,
+.payment .fee-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+.payment .fee-add label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.payment .fee-add input,
+.payment .fee-actions select {
+  width: auto;
+  min-width: 110px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.payment .muted {
+  color: var(--muted);
+}
+.payment .fine {
+  font-size: 0.8125rem;
+  margin: 8px 0 0;
+}

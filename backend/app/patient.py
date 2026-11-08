@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import dispatch
+from . import billing, dispatch
 from .config import settings
 from .models import Case, CaseAccess, CaseLocation
 
@@ -66,6 +66,7 @@ def status(db: Session, case_id: int, token: str) -> dict:
         "called_back": case.called_back,
         "location_shared": loc is not None,
         "trip": trip,
+        "charges": billing.patient_view(db, case),
         "created_at": case.created_at,
     }
 

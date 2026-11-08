@@ -37,6 +37,10 @@ class Settings:
     # When set, the clinic desk and its data need this code (header X-Staff-Key).
     # Leave empty only for demos with sample data.
     staff_key: str = os.getenv("STAFF_KEY", "")
+    # Prices in rupees. Patients only ever see a fee after they were helped; staff can waive any fee.
+    transport_base_pkr: int = int(os.getenv("TRANSPORT_BASE_PKR", "300"))
+    transport_per_km_pkr: int = int(os.getenv("TRANSPORT_PER_KM_PKR", "40"))
+    visit_fee_pkr: int = int(os.getenv("VISIT_FEE_PKR", "500"))
     clinic_name: str = os.getenv("CLINIC_NAME", "Shifa Family Clinic")
     cors_origins: list[str] = os.getenv(
         "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, type Prices } from "../lib/api";
 import { loadLang, myRequests, rememberRequest, saveLang, T, type MyRequest, type UiLang } from "../lib/patientText";
 import Logo from "./Logo";
 
@@ -81,8 +81,12 @@ export default function PatientPortal() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mine, setMine] = useState<MyRequest[]>([]);
+  const [prices, setPrices] = useState<Prices | null>(null);
 
-  useEffect(() => setMine(myRequests()), []);
+  useEffect(() => {
+    setMine(myRequests());
+    api.prices().then(setPrices).catch(() => {});
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -156,6 +160,7 @@ export default function PatientPortal() {
           {busy ? t.sending : t.submit}
         </button>
         <p className="p-muted small">{t.trust}</p>
+        {prices && <p className="p-muted small">{t.freeNote(prices.transport_base_pkr, prices.transport_per_km_pkr)}</p>}
       </form>
 
       {mine.length > 0 && (

@@ -46,6 +46,13 @@ export const T = {
     calledBack: "The clinic has called you back.",
     notDiagnosis: "Sehat Saathi does not diagnose. In an emergency, call 1122.",
     sampleLocation: "Demo: use a sample Multan location",
+    payTitle: "Payment",
+    amountDue: (amt: string) => `Amount due: ${amt}`,
+    payHow: "Pay after your visit: cash to the responder or at the hospital counter. Ask the clinic about JazzCash or Easypaisa.",
+    paid: (amt: string, m: string) => `Paid: ${amt} (${m}). Thank you.`,
+    waived: (amt: string) => `No charge (${amt} waived)`,
+    freeNote: (base: number, perKm: number) =>
+      `Asking for help is free. If a Sehat Saathi responder takes you to hospital, you pay after you arrive: Rs ${base} + Rs ${perKm} per km.`,
   },
   ur: {
     dir: "rtl" as const,
@@ -91,6 +98,13 @@ export const T = {
     calledBack: "کلینک نے آپ کو کال کر لی ہے۔",
     notDiagnosis: "صحت ساتھی تشخیص نہیں کرتا۔ ایمرجنسی میں 1122 پر کال کریں۔",
     sampleLocation: "Demo: use a sample Multan location",
+    payTitle: "ادائیگی",
+    amountDue: (amt: string) => `واجب الادا رقم: ${amt}`,
+    payHow: "علاج کے بعد ادائیگی کریں: رضاکار کو نقد، یا ہسپتال کے کاؤنٹر پر۔ جاز کیش یا ایزی پیسہ کے لیے کلینک سے پوچھیں۔",
+    paid: (amt: string, m: string) => `ادا ہو گئے: ${amt} (${m})۔ شکریہ۔`,
+    waived: (amt: string) => `کوئی فیس نہیں (${amt} معاف)`,
+    freeNote: (base: number, perKm: number) =>
+      `مدد مانگنا مفت ہے۔ اگر صحت ساتھی کا رضاکار آپ کو ہسپتال لے جائے تو ادائیگی پہنچنے کے بعد ہوگی: ${base} روپے، اور ${perKm} روپے فی کلومیٹر۔`,
   },
 };
 

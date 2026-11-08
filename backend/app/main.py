@@ -17,15 +17,16 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import dispatch, patient, services, transport
+from . import billing, dispatch, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
-from .models import AuditEvent, Case, Dispatch, Lead, Patient, Responder, Slot
+from .models import AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
 from .schemas import (
     ApproveIn,
     AuditOut,
     CallbackIn,
     CaseOut,
+    ChargeOut,
     DispatchIn,
     DispatchOut,
     DispatchStatusIn,
@@ -36,6 +37,9 @@ from .schemas import (
     LocationIn,
     LocationOut,
     PositionIn,
+    PricesOut,
+    SettleIn,
+    VisitChargeIn,
     ResponderTripOut,
     TrackOut,
     ResponderOut,
@@ -319,6 +323,31 @@ def responder_trip(d: int, t: str, db: Session = Depends(get_db)):
     return dispatch.responder_trip(db, d, t)
 
 
+# ---------- Pay after service ----------
+
+@app.get("/api/prices", response_model=PricesOut)
+def prices():
+    """Published prices, so patients can see them before agreeing to anything."""
+    return {"transport_base_pkr": settings.transport_base_pkr,
+            "transport_per_km_pkr": settings.transport_per_km_pkr,
+            "visit_fee_pkr": settings.visit_fee_pkr}
+
+
+@app.get("/api/cases/{case_id}/charges", response_model=list[ChargeOut], dependencies=STAFF)
+def case_charges(case_id: int, db: Session = Depends(get_db)):
+    return billing.for_case(db, case_id)
+
+
+@app.post("/api/cases/{case_id}/charges", response_model=ChargeOut, status_code=201, dependencies=STAFF)
+def add_visit_fee(case_id: int, body: VisitChargeIn, db: Session = Depends(get_db)):
+    return billing.add_visit_charge(db, case_id, body.staff, body.amount_pkr, body.note)
+
+
+@app.post("/api/charges/{charge_id}/settle", response_model=ChargeOut, dependencies=STAFF)
+def settle_charge(charge_id: int, body: SettleIn, db: Session = Depends(get_db)):
+    return billing.settle(db, charge_id, body.staff, body.status, body.method, body.note)
+
+
 @app.get("/api/responders", response_model=list[ResponderOut], dependencies=STAFF)
 def responders(db: Session = Depends(get_db)):
     return list(db.scalars(select(Responder).order_by(Responder.id)))
@@ -380,8 +409,10 @@ def stats(db: Session = Depends(get_db)):
         else None
     )
     active = db.scalar(select(func.count()).where(Dispatch.status.in_(dispatch.ACTIVE)))
+    due = db.scalar(select(func.coalesce(func.sum(Charge.amount_pkr), 0)).where(Charge.status == "due"))
     free = db.scalar(select(func.count()).where(Responder.status == "available"))
     return StatsOut(
+        dues_pkr=int(due or 0),
         dispatches_active=active,
         responders_free=free,
         pending=pending,

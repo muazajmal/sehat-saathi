@@ -150,6 +150,11 @@ def update_status(db: Session, dispatch_id: int, staff: str, status: str, note: 
     d.status, d.updated_at = status, now()
     if status in ("at_hospital", "cancelled"):
         d.responder.status = "available"
+    if status == "at_hospital":
+        # Help was given: only now can a transport fee exist.
+        from .billing import add_transport_charge
+
+        add_transport_charge(db, d, staff)
     label = {"reached_patient": "Responder reached the patient", "at_hospital": "Patient arrived at hospital",
              "cancelled": "Dispatch cancelled"}[status]
     audit(db, staff, f"dispatch_{status}", f"{label}. {note}".strip(), d.case_id)

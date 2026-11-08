@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell, { useStaff } from "./AppShell";
 import TransportPanel from "./TransportPanel";
+import PaymentPanel from "./PaymentPanel";
 import {
   ago,
   api,
   ApiError,
   languageLabel,
+  rupees,
   scriptClass,
   slotTime,
   toDate,
@@ -36,6 +38,9 @@ const ACTION_LABEL: Record<string, string> = {
   dispatch_reached_patient: "Responder reached patient",
   dispatch_at_hospital: "Patient arrived at hospital",
   dispatch_cancelled: "Cancelled the responder",
+  charge_added: "Added a fee",
+  charge_paid: "Recorded a payment",
+  charge_waived: "Waived a fee",
   approved: "Approved booking",
   rejected: "Declined",
   called_back: "Called patient back",
@@ -129,6 +134,7 @@ export default function Desk() {
           value={stats?.dispatches_active ?? 0}
           label={`Responders out, ${stats?.responders_free ?? 0} free`}
         />
+        <Stat value={stats ? rupees(stats.dues_pkr ?? 0) : undefined} label="Fees due" />
         <Stat
           value={stats?.avg_review_minutes == null ? "–" : `${stats.avg_review_minutes} min`}
           label="Average review time"
@@ -407,6 +413,15 @@ function CaseDetail({
           </div>
         </div>
       )}
+
+      <PaymentPanel
+        c={c}
+        staff={staff}
+        onChanged={(msg) => {
+          onDecided(c, msg);
+          api.audit(c.id).then(setLog).catch(() => {});
+        }}
+      />
 
       <div className="panel glass">
         <h3>Activity</h3>

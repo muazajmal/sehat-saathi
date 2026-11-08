@@ -85,6 +85,10 @@ const FAQ = [
     a: "No. For any emergency the patient is told to call Rescue 1122 straight away, with a one-tap button. Sehat Saathi responders help on top of that: they support the family and meet them at hospital, and they take seriously ill patients who are stable but have no transport to the nearest suitable government hospital. A staff member approves every trip.",
   },
   {
+    q: "Do patients pay?",
+    a: "Asking for help, triage and 1122 advice are always free. A fee appears only after help was given: for example after a Sehat Saathi responder brings the patient to hospital, or after a booked visit. Patients pay in cash, JazzCash, Easypaisa or with the Sehat Card, and staff can waive any fee for patients who can't pay.",
+  },
+  {
     q: "What if the AI service goes down?",
     a: "Triage falls back to the built-in danger-sign checks and keeps working. Nothing is lost, and every case still reaches your desk.",
   },

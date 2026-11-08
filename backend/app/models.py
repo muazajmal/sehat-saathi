@@ -175,3 +175,23 @@ class CaseAccess(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), unique=True, index=True)
     token: Mapped[str] = mapped_column(String(64))
+
+
+class Charge(Base):
+    """A fee, only ever added AFTER help was given (trip finished or visit booked). Staff can waive it."""
+
+    __tablename__ = "charges"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), index=True)
+    dispatch_id: Mapped[int | None] = mapped_column(ForeignKey("dispatches.id"), nullable=True, unique=True)
+    kind: Mapped[str] = mapped_column(String(16))  # transport | visit
+    description: Mapped[str] = mapped_column(String(200), default="")
+    amount_pkr: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(12), default="due", index=True)  # due | paid | waived
+    method: Mapped[str | None] = mapped_column(String(20), nullable=True)  # cash | jazzcash | easypaisa | card | sehat_card
+    added_by: Mapped[str] = mapped_column(String(120))
+    settled_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

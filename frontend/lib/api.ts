@@ -63,6 +63,7 @@ export interface PatientStatus {
     eta_min: number;
     mode: "live" | "simulated" | "no_signal" | "finished";
   } | null;
+  charges: { id: number; kind: string; description: string; amount_pkr: number; status: "due" | "paid" | "waived"; method: PayMethod | null }[];
   created_at: string;
 }
 
@@ -75,7 +76,41 @@ export interface Stats {
   avg_review_minutes: number | null;
   dispatches_active?: number;
   responders_free?: number;
+  dues_pkr?: number;
 }
+
+export type PayMethod = "cash" | "jazzcash" | "easypaisa" | "card" | "sehat_card";
+export const PAY_METHOD_LABEL: Record<PayMethod, string> = {
+  cash: "Cash",
+  jazzcash: "JazzCash",
+  easypaisa: "Easypaisa",
+  card: "Card",
+  sehat_card: "Sehat Card",
+};
+
+export interface Charge {
+  id: number;
+  case_id: number;
+  dispatch_id: number | null;
+  kind: "transport" | "visit";
+  description: string;
+  amount_pkr: number;
+  status: "due" | "paid" | "waived";
+  method: PayMethod | null;
+  added_by: string;
+  settled_by: string | null;
+  note: string;
+  created_at: string;
+  settled_at: string | null;
+}
+
+export interface Prices {
+  transport_base_pkr: number;
+  transport_per_km_pkr: number;
+  visit_fee_pkr: number;
+}
+
+export const rupees = (n: number) => `Rs ${n.toLocaleString("en-PK")}`;
 
 export interface PatientLocation {
   lat: number;
@@ -302,6 +337,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ staff, responder_id, hospital_id, note }),
     }),
+  prices: () => call<Prices>("/api/prices"),
+  charges: (caseId: number) => call<Charge[]>(`/api/cases/${caseId}/charges`),
+  addVisitFee: (caseId: number, staff: string, amount_pkr: number | null, note = "") =>
+    call<Charge>(`/api/cases/${caseId}/charges`, { method: "POST", body: JSON.stringify({ staff, amount_pkr, note }) }),
+  settleCharge: (id: number, staff: string, status: "paid" | "waived", method: PayMethod | null, note = "") =>
+    call<Charge>(`/api/charges/${id}/settle`, { method: "POST", body: JSON.stringify({ staff, status, method, note }) }),
   track: (dispatchId: number) => call<Track>(`/api/dispatches/${dispatchId}/track`),
   responderTrack: (d: number, t: string) => call<Track>(`/api/responder-track?d=${d}&t=${encodeURIComponent(t)}`),
   responderTrip: (d: number, t: string) =>

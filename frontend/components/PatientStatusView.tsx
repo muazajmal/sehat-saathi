@@ -3,7 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { api, ApiError, IN_MULTAN, SAMPLE_LOCATION, scriptClass, slotTime, type PatientStatus } from "../lib/api";
+import {
+  api,
+  ApiError,
+  IN_MULTAN,
+  PAY_METHOD_LABEL,
+  rupees,
+  SAMPLE_LOCATION,
+  scriptClass,
+  slotTime,
+  type PatientStatus,
+  type PayMethod,
+} from "../lib/api";
 import { T } from "../lib/patientText";
 import { EmergencyBar, PatientHeader, useClinicName, usePatientLang } from "./PatientPortal";
 
@@ -143,6 +154,27 @@ export default function PatientStatusView() {
             )}
             {st.called_back && <p className="p-ok">{t.calledBack}</p>}
           </section>
+
+          {st.charges.length > 0 && (
+            <section className="p-card p-pay">
+              <h2>{t.payTitle}</h2>
+              <ul>
+                {st.charges.map((f) => (
+                  <li key={f.id} className={`p-fee ${f.status}`}>
+                    <b dir="ltr">
+                      {f.status === "due"
+                        ? t.amountDue(rupees(f.amount_pkr))
+                        : f.status === "paid"
+                          ? t.paid(rupees(f.amount_pkr), PAY_METHOD_LABEL[f.method as PayMethod] ?? "")
+                          : t.waived(rupees(f.amount_pkr))}
+                    </b>
+                    <span dir="ltr">{f.description}</span>
+                  </li>
+                ))}
+              </ul>
+              {st.charges.some((f) => f.status === "due") && <p className="p-muted small">{t.payHow}</p>}
+            </section>
+          )}
 
           <section className="p-card p-save">
             <p>{t.save}</p>

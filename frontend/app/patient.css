@@ -335,3 +335,33 @@
 .r-actions {
   margin: 4px 0 12px;
 }
+
+.p-pay ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.p-fee {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+}
+.p-fee b {
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+}
+.p-fee span {
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.875rem;
+}
+.p-fee.due b {
+  color: var(--today);
+}
+.p-fee.paid b {
+  color: var(--mint);
+}

@@ -98,6 +98,7 @@ class StatsOut(BaseModel):
     avg_review_minutes: float | None
     dispatches_active: int = 0
     responders_free: int = 0
+    dues_pkr: int = 0
 
 
 class LeadIn(BaseModel):
@@ -302,6 +303,15 @@ class PatientTrip(BaseModel):
     mode: str
 
 
+class PatientCharge(BaseModel):
+    id: int
+    kind: str
+    description: str
+    amount_pkr: int
+    status: str
+    method: str | None
+
+
 class PatientStatusOut(BaseModel):
     case_id: int
     clinic: str
@@ -316,4 +326,41 @@ class PatientStatusOut(BaseModel):
     called_back: bool
     location_shared: bool
     trip: PatientTrip | None
+    charges: list[PatientCharge] = []
     created_at: datetime
+
+
+class ChargeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    case_id: int
+    dispatch_id: int | None
+    kind: str
+    description: str
+    amount_pkr: int
+    status: str
+    method: str | None
+    added_by: str
+    settled_by: str | None
+    note: str
+    created_at: datetime
+    settled_at: datetime | None
+
+
+class VisitChargeIn(BaseModel):
+    staff: str = Field(min_length=2, max_length=120)
+    amount_pkr: int | None = Field(default=None, ge=0, le=1_000_000)
+    note: str = Field(default="", max_length=500)
+
+
+class SettleIn(BaseModel):
+    staff: str = Field(min_length=2, max_length=120)
+    status: Literal["paid", "waived"]
+    method: Literal["cash", "jazzcash", "easypaisa", "card", "sehat_card"] | None = None
+    note: str = Field(default="", max_length=500)
+
+
+class PricesOut(BaseModel):
+    transport_base_pkr: int
+    transport_per_km_pkr: int
+    visit_fee_pkr: int
