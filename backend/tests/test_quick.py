@@ -57,9 +57,10 @@ def test_voice_sends_audio_to_gemini_and_returns_text(monkeypatch):
 
     class Resp:
         status_code = 200
+        text = '{"speech": true, "text": " میرے بچے کو بخار ہے \\n"}'
 
         def json(self):
-            return {"candidates": [{"content": {"parts": [{"text": " میرے بچے کو بخار ہے \n"}]}}]}
+            return {"candidates": [{"content": {"parts": [{"text": self.text}]}}]}
 
     def fake_post(url, params, json, timeout):
         seen.update(url=url, body=json)
@@ -69,5 +70,9 @@ def test_voice_sends_audio_to_gemini_and_returns_text(monkeypatch):
     monkeypatch.setattr(voice.httpx, "post", fake_post)
     wav = base64.b64encode(b"RIFF" + b"\0" * 200).decode()
     assert voice.transcribe(wav, "audio/wav", "ur") == "میرے بچے کو بخار ہے"
+    Resp.text = '{"speech": false, "text": "میرے پیٹ میں درد ہے"}'  # guessed words from a hum: dropped
+    assert voice.transcribe(wav, "audio/wav", "ur") == ""
+    Resp.text = "not json"
+    assert voice.transcribe(wav, "audio/wav", "ur") == ""
     part = seen["body"]["contents"][0]["parts"][1]["inline_data"]
     assert part["mime_type"] == "audio/wav" and part["data"] == wav
