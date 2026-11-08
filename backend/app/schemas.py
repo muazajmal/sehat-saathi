@@ -99,6 +99,7 @@ class StatsOut(BaseModel):
     dispatches_active: int = 0
     responders_free: int = 0
     dues_pkr: int = 0
+    ambulances_pending: int = 0
 
 
 class LeadIn(BaseModel):
@@ -364,3 +365,52 @@ class PricesOut(BaseModel):
     transport_base_pkr: int
     transport_per_km_pkr: int
     visit_fee_pkr: int
+
+
+class AmbulanceIn(BaseModel):
+    driver_name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(pattern=r"^\+\d{10,15}$")
+    organisation: str = Field(default="", max_length=120)
+    vehicle_type: Literal["basic", "oxygen", "icu", "car"]
+    vehicle_reg: str = Field(min_length=3, max_length=32)
+    area: str = Field(min_length=2, max_length=120)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+    agree: bool
+
+
+class AmbulanceOut(BaseModel):
+    id: int
+    driver_name: str
+    phone: str
+    organisation: str
+    vehicle_type: str
+    vehicle: str
+    vehicle_reg: str
+    area: str
+    lat: float
+    lng: float
+    status: str
+    online: bool
+    busy: bool
+    review_note: str
+    reviewed_by: str
+    created_at: datetime
+    last_seen_at: datetime | None
+    trip_link: str = ""
+    trip_tier: str = ""
+    link: str = ""
+
+
+class AmbulanceOnlineIn(BaseModel):
+    m: int
+    t: str = Field(min_length=8, max_length=64)
+    online: bool
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+
+
+class AmbulanceReviewIn(BaseModel):
+    staff: str = Field(min_length=2, max_length=120)
+    decision: Literal["approve", "reject", "suspend"]
+    note: str = Field(default="", max_length=500)

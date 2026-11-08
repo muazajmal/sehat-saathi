@@ -2,6 +2,7 @@ import Link from "next/link";
 import "./landing.css";
 import DemoForm from "../components/DemoForm";
 import DeskPreview from "../components/DeskPreview";
+import EmergencyButton from "../components/EmergencyButton";
 import { LogoMark } from "../components/Logo";
 import PhoneDemo from "../components/PhoneDemo";
 import SiteNav from "../components/SiteNav";
@@ -114,6 +115,7 @@ export default function Home() {
   return (
     <div className="landing">
       <SiteNav />
+      <EmergencyButton />
 
       {/* ---------- Hero ---------- */}
       <section className="hero-dark">
@@ -136,6 +138,9 @@ export default function Home() {
             </div>
             <p className="hero-patient">
               Feeling unwell? <Link href="/patient">Tell a doctor what&apos;s wrong, in any language →</Link>
+            </p>
+            <p className="hero-patient">
+              Drive an ambulance in Multan? <Link href="/ambulance/join">Register and get trips near you →</Link>
             </p>
             <ul className="hero-ticks">
               <li>
@@ -458,6 +463,7 @@ export default function Home() {
             <a href="#safety">Safety</a>
             <a href="#pricing">Pricing</a>
             <Link href="/desk">Open the desk</Link>
+            <Link href="/ambulance/join">Register an ambulance</Link>
           </nav>
           <nav aria-label="Company">
             <h4>Company</h4>

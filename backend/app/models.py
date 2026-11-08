@@ -195,3 +195,33 @@ class Charge(Base):
     note: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime)
     settled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class AmbulanceMember(Base):
+    """A local ambulance or driver who signed up on the website (like a ride app driver).
+
+    Stays 'pending' until clinic staff check the papers and approve. Approval creates
+    a Responder, so approved members show up in dispatch next to the demo team.
+    """
+
+    __tablename__ = "ambulance_members"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    driver_name: Mapped[str] = mapped_column(String(120))
+    phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    organisation: Mapped[str] = mapped_column(String(120), default="")
+    vehicle_type: Mapped[str] = mapped_column(String(24))  # basic | oxygen | icu | car
+    vehicle_reg: Mapped[str] = mapped_column(String(32))
+    area: Mapped[str] = mapped_column(String(120))
+    lat: Mapped[float] = mapped_column()
+    lng: Mapped[float] = mapped_column()
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)  # pending|approved|rejected|suspended
+    token: Mapped[str] = mapped_column(String(64))
+    responder_id: Mapped[int | None] = mapped_column(ForeignKey("responders.id"), nullable=True)
+    reviewed_by: Mapped[str] = mapped_column(String(120), default="")
+    review_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    responder = relationship("Responder")

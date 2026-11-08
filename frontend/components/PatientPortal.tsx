@@ -8,7 +8,7 @@ import { loadLang, myRequests, rememberRequest, saveLang, T, type MyRequest, typ
 import Logo from "./Logo";
 
 // Pakistani mobile numbers: 03xx xxxxxxx, +92 3xx xxxxxxx or 92 3xx…
-function normalisePhone(raw: string): string | null {
+export function normalisePhone(raw: string): string | null {
   const d = raw.replace(/[^\d+]/g, "");
   if (/^03\d{9}$/.test(d)) return "+92" + d.slice(1);
   if (/^\+923\d{9}$/.test(d)) return d;

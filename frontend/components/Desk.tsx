@@ -116,7 +116,7 @@ export default function Desk() {
     : cases;
 
   return (
-    <AppShell staff={staff} onStaff={setStaff} online={online} urgent={stats?.urgent_pending ?? 0}>
+    <AppShell staff={staff} onStaff={setStaff} online={online} urgent={stats?.urgent_pending ?? 0} joining={stats?.ambulances_pending ?? 0}>
       <header className="app-head">
         <div>
           <h1>Patient queue</h1>

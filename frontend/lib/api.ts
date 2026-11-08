@@ -77,6 +77,49 @@ export interface Stats {
   dispatches_active?: number;
   responders_free?: number;
   dues_pkr?: number;
+  ambulances_pending?: number;
+}
+
+export type VehicleType = "basic" | "oxygen" | "icu" | "car";
+export const VEHICLE_LABEL: Record<VehicleType, string> = {
+  basic: "Ambulance (basic)",
+  oxygen: "Ambulance with oxygen",
+  icu: "ICU ambulance (ventilator)",
+  car: "Patient transport car",
+};
+export type MemberStatus = "pending" | "approved" | "rejected" | "suspended";
+export interface AmbulanceMember {
+  id: number;
+  driver_name: string;
+  phone: string;
+  organisation: string;
+  vehicle_type: VehicleType;
+  vehicle: string;
+  vehicle_reg: string;
+  area: string;
+  lat: number;
+  lng: number;
+  status: MemberStatus;
+  online: boolean;
+  busy: boolean;
+  review_note: string;
+  reviewed_by: string;
+  created_at: string;
+  last_seen_at: string | null;
+  trip_link: string;
+  trip_tier: string;
+  link: string;
+}
+export interface AmbulanceSignup {
+  driver_name: string;
+  phone: string;
+  organisation: string;
+  vehicle_type: VehicleType;
+  vehicle_reg: string;
+  area: string;
+  lat: number | null;
+  lng: number | null;
+  agree: boolean;
 }
 
 export type PayMethod = "cash" | "jazzcash" | "easypaisa" | "card" | "sehat_card";
@@ -305,6 +348,14 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  ambulanceRegister: (b: AmbulanceSignup) =>
+    call<AmbulanceMember>("/api/ambulances/register", { method: "POST", body: JSON.stringify(b) }),
+  ambulanceMe: (m: number, t: string) => call<AmbulanceMember>(`/api/ambulances/me?m=${m}&t=${encodeURIComponent(t)}`),
+  ambulanceOnline: (m: number, t: string, online: boolean, lat: number | null = null, lng: number | null = null) =>
+    call<AmbulanceMember>("/api/ambulances/me/online", { method: "POST", body: JSON.stringify({ m, t, online, lat, lng }) }),
+  ambulances: () => call<AmbulanceMember[]>("/api/ambulances"),
+  ambulanceReview: (id: number, staff: string, decision: "approve" | "reject" | "suspend", note = "") =>
+    call<AmbulanceMember>(`/api/ambulances/${id}/review`, { method: "POST", body: JSON.stringify({ staff, decision, note }) }),
   health: () =>
     call<{ ok: boolean; clinic: string; ai: string; whatsapp: boolean; staff_code_required: boolean }>("/api/health"),
   staffCheck: () => call<{ ok: boolean }>("/api/staff/check"),

@@ -17,11 +17,15 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import billing, dispatch, patient, services, transport
+from . import billing, dispatch, members, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
-from .models import AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
+from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
 from .schemas import (
+    AmbulanceIn,
+    AmbulanceOnlineIn,
+    AmbulanceOut,
+    AmbulanceReviewIn,
     ApproveIn,
     AuditOut,
     CallbackIn,
@@ -353,6 +357,39 @@ def responders(db: Session = Depends(get_db)):
     return list(db.scalars(select(Responder).order_by(Responder.id)))
 
 
+@app.post("/api/ambulances/register", response_model=AmbulanceOut, status_code=201)
+def ambulance_register(body: AmbulanceIn, db: Session = Depends(get_db)):
+    """A local ambulance signs up. It can't take patients until staff approve it."""
+    if not body.agree:
+        raise HTTPException(422, "Please agree to the rules first.")
+    m = members.register(db, body.driver_name.strip(), body.phone, body.organisation.strip(), body.vehicle_type,
+                         body.vehicle_reg.strip(), body.area.strip(), body.lat, body.lng)
+    return members.out(db, m, private=True)
+
+
+@app.get("/api/ambulances/me", response_model=AmbulanceOut)
+def ambulance_me(m: int, t: str, db: Session = Depends(get_db)):
+    """The driver's own page (private link): approval status, online, current trip."""
+    return members.out(db, members.check(db, m, t), private=True)
+
+
+@app.post("/api/ambulances/me/online", response_model=AmbulanceOut)
+def ambulance_online(body: AmbulanceOnlineIn, db: Session = Depends(get_db)):
+    """Go online or offline. While online the page also sends where the ambulance is."""
+    return members.set_online(db, members.check(db, body.m, body.t), body.online, body.lat, body.lng)
+
+
+@app.get("/api/ambulances", response_model=list[AmbulanceOut], dependencies=STAFF)
+def ambulance_list(db: Session = Depends(get_db)):
+    return members.list_all(db)
+
+
+@app.post("/api/ambulances/{member_id}/review", response_model=AmbulanceOut, dependencies=STAFF)
+def ambulance_review(member_id: int, body: AmbulanceReviewIn, db: Session = Depends(get_db)):
+    """Staff approve after checking the papers, or reject / pause a member."""
+    return members.review(db, member_id, body.staff, body.decision, body.note)
+
+
 @app.get("/api/hospitals")
 def hospitals():
     from dataclasses import asdict
@@ -411,7 +448,9 @@ def stats(db: Session = Depends(get_db)):
     active = db.scalar(select(func.count()).where(Dispatch.status.in_(dispatch.ACTIVE)))
     due = db.scalar(select(func.coalesce(func.sum(Charge.amount_pkr), 0)).where(Charge.status == "due"))
     free = db.scalar(select(func.count()).where(Responder.status == "available"))
+    joining = db.scalar(select(func.count()).where(AmbulanceMember.status == "pending"))
     return StatsOut(
+        ambulances_pending=joining,
         dues_pkr=int(due or 0),
         dispatches_active=active,
         responders_free=free,

@@ -45,6 +45,16 @@ function CalIcon() {
     </svg>
   );
 }
+function AmbIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M2.5 16.5V8h11v8.5M13.5 11h4l3 3v2.5h-7.5" />
+      <circle cx="6.5" cy="17.5" r="1.8" />
+      <circle cx="16.5" cy="17.5" r="1.8" />
+      <path d="M8 10v4M6 12h4" />
+    </svg>
+  );
+}
 function SiteIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -60,12 +70,14 @@ export default function AppShell({
   onStaff,
   online = true,
   urgent = 0,
+  joining = 0,
 }: {
   children: React.ReactNode;
   staff: string;
   onStaff: (v: string) => void;
   online?: boolean;
   urgent?: number;
+  joining?: number;
 }) {
   const path = usePathname();
   return (
@@ -81,6 +93,11 @@ export default function AppShell({
           <Link href="/desk/schedule" className="rail-link" aria-current={path === "/desk/schedule" ? "page" : undefined}>
             <CalIcon />
             <span className="label">Schedule</span>
+          </Link>
+          <Link href="/desk/ambulances" className="rail-link" aria-current={path === "/desk/ambulances" ? "page" : undefined}>
+            <AmbIcon />
+            <span className="label">Ambulances</span>
+            {joining > 0 && <span className="rail-count" aria-label={`${joining} to check`}>{joining}</span>}
           </Link>
           <Link href="/" className="rail-link">
             <SiteIcon />

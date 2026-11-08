@@ -365,3 +365,70 @@
 .p-fee.paid b {
   color: var(--mint);
 }
+
+/* ---------- ambulance sign-up + driver page ---------- */
+.a-how {
+  margin: 4px 0 14px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 6px;
+}
+.a-how li {
+  counter-increment: step;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.9375rem;
+}
+.a-how li::before {
+  content: counter(step);
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--teal-soft);
+  color: var(--mint);
+  font: 700 0.8125rem var(--sans);
+}
+.a-types {
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.a-types legend { padding: 0; margin-bottom: 6px; font-size: 0.875rem; color: var(--muted); }
+.a-types label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 48px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+.a-types label.on { border-color: var(--mint); background: var(--teal-soft); }
+.a-types input { accent-color: var(--mint); margin: 0; flex: none; }
+.a-types label span { text-align: start; }
+.a-reg { margin: 0 0 6px; font-weight: 600; }
+.a-trip {
+  border-color: rgba(255, 122, 131, 0.55);
+  background: var(--urgent-bg);
+}
+.a-trip h2 { color: var(--urgent); }
+.a-online h2 { display: flex; align-items: center; gap: 8px; }
+.a-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--faint); }
+.a-online.on { border-color: rgba(95, 227, 196, 0.45); }
+.a-online.on .a-dot { background: var(--mint); box-shadow: 0 0 0 4px rgba(95, 227, 196, 0.18); }
+@media (max-width: 380px) {
+  .a-types { grid-template-columns: 1fr; }
+}
