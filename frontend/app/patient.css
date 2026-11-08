@@ -524,3 +524,13 @@
 .p-install img { border-radius: 12px; flex: none; }
 .p-install p { margin: 4px 0 10px; }
 .p-install-row { display: flex; gap: 12px; align-items: center; }
+
+.p-away {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 194, 102, 0.45);
+  background: var(--today-bg);
+  color: var(--ink);
+}
+.p-away p { margin: 6px 0 0; color: var(--muted); }

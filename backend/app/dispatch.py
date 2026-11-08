@@ -78,11 +78,17 @@ def options(db: Session, case_id: int) -> dict:
     need, reason = transport.needed_specialty(case.red_flags or [], case.specialty, case.message)
     loc = db.scalar(select(CaseLocation).where(CaseLocation.case_id == case.id))
     hospitals, responders = [], []
+    out_of_area, nearest_km, too_far = False, None, 0
     if loc:
-        hospitals = transport.rank_hospitals(loc.lat, loc.lng, need)
-        free = db.scalars(select(Responder).where(Responder.status == "available"))
+        nearest_km = round(transport.nearest_hospital_km(loc.lat, loc.lng), 1)
+        out_of_area = nearest_km > transport.MAX_HOSPITAL_KM
+        hospitals = [] if out_of_area else transport.rank_hospitals(loc.lat, loc.lng, need)
+        free = [] if out_of_area else db.scalars(select(Responder).where(Responder.status == "available"))
         for r in free:
             km = transport.distance_km(loc.lat, loc.lng, r.lat, r.lng)
+            if km > transport.MAX_RESPONDER_KM:
+                too_far += 1  # e.g. an online driver in another city
+                continue
             responders.append({**{c: getattr(r, c) for c in
                                   ("id", "name", "phone", "vehicle", "area", "lat", "lng", "status", "is_demo")},
                                "distance_km": round(km, 1), "eta_minutes": transport.eta_minutes(km)})
@@ -90,6 +96,7 @@ def options(db: Session, case_id: int) -> dict:
     return {
         "case_id": case.id, "tier": tier, "call_1122": tier == "emergency", "need": need, "reason": reason,
         "location": loc, "hospitals": hospitals, "responders": responders,
+        "out_of_area": out_of_area, "nearest_hospital_km": nearest_km, "responders_too_far": too_far,
         "dispatch": dispatch_out(active_dispatch(db, case.id), db),
     }
 
@@ -105,12 +112,18 @@ def send(db: Session, case_id: int, staff: str, responder_id: int, hospital_id: 
     hospital = transport.HOSPITALS_BY_ID.get(hospital_id)
     if hospital is None:
         raise HTTPException(404, "Unknown hospital.")
+    if not transport.in_service_area(loc.lat, loc.lng):
+        km = transport.nearest_hospital_km(loc.lat, loc.lng)
+        raise HTTPException(409, f"This patient is {km:.0f} km from the nearest partner hospital, outside the "
+                                 "service area. Tell them to call 1122.")
     # Claim the responder only if still free, so two staff can't send the same person.
     responder = db.get(Responder, responder_id)
     if responder is None or responder.status != "available":
         raise HTTPException(409, "That responder is no longer free. Pick another.")
-    responder.status = "busy"
     km = transport.distance_km(loc.lat, loc.lng, responder.lat, responder.lng)
+    if km > transport.MAX_RESPONDER_KM:
+        raise HTTPException(409, f"{responder.name} is {km:.0f} km away from the patient. Pick someone nearer.")
+    responder.status = "busy"
     eta = transport.eta_minutes(km)
     tier = "emergency" if case.urgency == "urgent" else "transport"
     t = now()

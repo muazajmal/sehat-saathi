@@ -46,6 +46,9 @@ export const T = {
     calledBack: "The clinic has called you back.",
     notDiagnosis: "Sehat Saathi does not diagnose. In an emergency, call 1122.",
     sampleLocation: "Demo: use a sample Multan location",
+    outOfArea: (km: number) =>
+      `You seem to be about ${km} km from Multan. Sehat Saathi's responders only work in Multan for now, so we can't send anyone to you. If it's an emergency, call Rescue 1122. They cover all of Punjab.`,
+    outOfAreaTitle: "You're outside our area",
     listen: "Listen",
     stopListening: "Stop",
     whatsapp: "Send to my WhatsApp",
@@ -102,6 +105,9 @@ export const T = {
     calledBack: "کلینک نے آپ کو کال کر لی ہے۔",
     notDiagnosis: "صحت ساتھی تشخیص نہیں کرتا۔ ایمرجنسی میں 1122 پر کال کریں۔",
     sampleLocation: "Demo: use a sample Multan location",
+    outOfArea: (km: number) =>
+      `آپ ملتان سے تقریباً ${km} کلومیٹر دور لگتے ہیں۔ صحت ساتھی کے رضاکار ابھی صرف ملتان میں کام کرتے ہیں، اس لیے ہم آپ کے پاس کسی کو نہیں بھیج سکتے۔ ایمرجنسی ہو تو ریسکیو 1122 پر کال کریں، وہ پورے پنجاب میں کام کرتے ہیں۔`,
+    outOfAreaTitle: "آپ ہمارے علاقے سے باہر ہیں",
     listen: "سنیں",
     stopListening: "روکیں",
     whatsapp: "اپنے واٹس ایپ پر بھیجیں",

@@ -54,6 +54,7 @@ const en = {
   onTrip: "You're on a trip",
   gpsOff: "Location is blocked, so the clinic can't see how near you are. Allow location for this site.",
   lastSent: (s: string) => `Location sent ${s}`,
+  outside: "You're outside the service area. Sehat Saathi only sends trips in and around Multan, so you won't get trips where you are now.",
 };
 
 const ur: typeof en = {
@@ -107,6 +108,7 @@ const ur: typeof en = {
   onTrip: "آپ ٹرپ پر ہیں",
   gpsOff: "لوکیشن بند ہے، اس لیے کلینک نہیں دیکھ سکتا کہ آپ کتنے قریب ہیں۔ اس سائٹ کو لوکیشن کی اجازت دیں۔",
   lastSent: (s: string) => `جگہ بھیجی گئی ${s}`,
+  outside: "آپ سروس کے علاقے سے باہر ہیں۔ صحت ساتھی صرف ملتان اور آس پاس ٹرپ بھیجتا ہے، اس لیے جہاں آپ ابھی ہیں وہاں ٹرپ نہیں ملیں گے۔",
 };
 
 export const AT = { en, ur } satisfies Record<UiLang, typeof en>;

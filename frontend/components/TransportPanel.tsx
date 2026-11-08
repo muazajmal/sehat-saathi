@@ -369,7 +369,18 @@ export default function TransportPanel({
             </div>
           )}
 
-          {!active && d?.status !== "at_hospital" && (
+          {t.out_of_area && !d && (
+            <div className="out-of-area">
+              <b>Outside the service area.</b> This patient is about {Math.round(t.nearest_hospital_km ?? 0)} km from the
+              nearest partner hospital in Multan, so no responder can be sent. Call them back and tell them to call{" "}
+              <b>Rescue 1122</b>, which covers all of Punjab.
+              <a className="btn btn-danger" href="tel:1122">
+                1122
+              </a>
+            </div>
+          )}
+
+          {!active && d?.status !== "at_hospital" && !t.out_of_area && (
             <>
               <p className="reason">{t.reason}</p>
               <fieldset className="choice">
@@ -395,7 +406,13 @@ export default function TransportPanel({
 
               <fieldset className="choice">
                 <legend>Nearest free responder</legend>
-                {t.responders.length === 0 && <p className="muted">All responders are out. Call 1122.</p>}
+                {t.responders.length === 0 && <p className="muted">No free responder nearby. Call 1122.</p>}
+                {t.responders_too_far > 0 && (
+                  <p className="muted small">
+                    {t.responders_too_far} online {t.responders_too_far === 1 ? "ambulance is" : "ambulances are"} more than 40 km
+                    away, so not shown.
+                  </p>
+                )}
                 {t.responders.slice(0, 3).map((r) => (
                   <label key={r.id} className={r.id === responderId ? "on" : ""}>
                     <input

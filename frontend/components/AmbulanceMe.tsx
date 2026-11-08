@@ -140,6 +140,7 @@ export default function AmbulanceMe() {
                 <p className="p-muted small">{t.lastSent(new Date(sentAt).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" }))}</p>
               )}
               {me.online && gpsError && <div className="error">{t.gpsOff}</div>}
+              {me.online && !me.in_area && <p className="p-away small">{t.outside}</p>}
             </section>
           )}
         </>

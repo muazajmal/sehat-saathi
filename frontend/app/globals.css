@@ -1899,3 +1899,16 @@ a.sslot:hover {
 @media (max-width: 720px) {
   .amb-wrap { padding: 0 16px 32px; }
 }
+
+.out-of-area {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  margin: 12px 0;
+  padding: 14px;
+  border-radius: var(--radius-m);
+  border: 1px solid rgba(255, 194, 102, 0.45);
+  background: var(--today-bg);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}

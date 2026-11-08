@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import billing, dispatch
+from . import transport, billing, dispatch
 from .config import settings
 from .models import Case, CaseAccess, CaseLocation
 
@@ -65,6 +65,8 @@ def status(db: Session, case_id: int, token: str) -> dict:
         "booked_slot": s if case.status == "approved" else None,
         "called_back": case.called_back,
         "location_shared": loc is not None,
+        "out_of_area": bool(loc) and not transport.in_service_area(loc.lat, loc.lng),
+        "nearest_hospital_km": round(transport.nearest_hospital_km(loc.lat, loc.lng), 1) if loc else None,
         "trip": trip,
         "charges": billing.patient_view(db, case),
         "created_at": case.created_at,

@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import {
   api,
   ApiError,
-  IN_MULTAN,
   PAY_METHOD_LABEL,
   rupees,
   SAMPLE_LOCATION,
@@ -67,7 +66,6 @@ export default function PatientStatusView() {
         });
       }
       setSt(await api.patientLocation(c, token, pos.lat, pos.lng, pos.label));
-      if (!sample && !IN_MULTAN(pos.lat, pos.lng)) setLocError("Note: this location is outside Multan.");
     } catch {
       setLocError(t.locationBlocked);
     } finally {
@@ -102,6 +100,11 @@ export default function PatientStatusView() {
                     {t.sampleLocation}
                   </button>
                 </>
+              ) : st.out_of_area ? (
+                <div className="p-away">
+                  <b>{t.outOfAreaTitle}</b>
+                  <p>{t.outOfArea(Math.round(st.nearest_hospital_km ?? 0))}</p>
+                </div>
               ) : (
                 <p className="p-ok">{t.locationShared}</p>
               )}

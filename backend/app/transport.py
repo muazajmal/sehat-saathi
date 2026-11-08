@@ -107,3 +107,17 @@ SAMPLE_LOCATION = {"lat": 30.2297, "lng": 71.4789, "label": "Gulgasht Colony, Mu
 def in_multan(lat: float, lng: float) -> bool:
     a, b, c, d = MULTAN_BOX
     return a <= lat <= b and c <= lng <= d
+
+
+# Service area. Partner hospitals and responders are in Multan only, so a patient far from
+# every partner hospital must be told to call 1122, never sent on a 400 km "trip".
+MAX_HOSPITAL_KM = 50  # patient to the nearest partner hospital
+MAX_RESPONDER_KM = 40  # responder to the patient
+
+
+def nearest_hospital_km(lat: float, lng: float) -> float:
+    return min(distance_km(lat, lng, h.lat, h.lng) for h in HOSPITALS)
+
+
+def in_service_area(lat: float, lng: float) -> bool:
+    return nearest_hospital_km(lat, lng) <= MAX_HOSPITAL_KM

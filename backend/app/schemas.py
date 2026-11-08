@@ -224,6 +224,9 @@ class TransportOut(BaseModel):
     hospitals: list[HospitalOption]
     responders: list[ResponderOption]
     dispatch: DispatchOut | None
+    out_of_area: bool = False
+    nearest_hospital_km: float | None = None
+    responders_too_far: int = 0
 
 
 class DispatchIn(BaseModel):
@@ -343,6 +346,8 @@ class PatientStatusOut(BaseModel):
     booked_slot: PatientSlot | None
     called_back: bool
     location_shared: bool
+    out_of_area: bool = False
+    nearest_hospital_km: float | None = None
     trip: PatientTrip | None
     charges: list[PatientCharge] = []
     created_at: datetime
@@ -417,6 +422,7 @@ class AmbulanceOut(BaseModel):
     trip_link: str = ""
     trip_tier: str = ""
     link: str = ""
+    in_area: bool = True
 
 
 class AmbulanceOnlineIn(BaseModel):

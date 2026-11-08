@@ -72,6 +72,7 @@ def out(db: Session, m: AmbulanceMember, private: bool = False) -> dict:
         "online": bool(r and r.status in ("available", "busy")), "busy": bool(r and r.status == "busy"),
         "review_note": m.review_note, "reviewed_by": m.reviewed_by, "created_at": m.created_at,
         "last_seen_at": m.last_seen_at, "trip_link": "", "trip_tier": "",
+        "in_area": transport.in_service_area(m.lat, m.lng),
     }
     if trip is not None:
         o["trip_tier"] = trip.tier

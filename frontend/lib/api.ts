@@ -53,6 +53,8 @@ export interface PatientStatus {
   booked_slot: { starts_at: string; doctor: string } | null;
   called_back: boolean;
   location_shared: boolean;
+  out_of_area: boolean;
+  nearest_hospital_km: number | null;
   trip: {
     status: DispatchStatus;
     responder: string;
@@ -107,6 +109,7 @@ export interface AmbulanceMember {
   created_at: string;
   last_seen_at: string | null;
   trip_link: string;
+  in_area: boolean;
   trip_tier: string;
   link: string;
 }
@@ -265,6 +268,9 @@ export interface Transport {
   hospitals: HospitalOption[];
   responders: ResponderOption[];
   dispatch: Dispatch | null;
+  out_of_area: boolean;
+  nearest_hospital_km: number | null;
+  responders_too_far: number;
 }
 
 // Where the website demo puts a visitor who can't share a real location (matches the API).
