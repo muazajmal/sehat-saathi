@@ -41,7 +41,12 @@ def escalate(case_payload: dict) -> bool:
         log.info("[escalate:dry-run] case=%s", case_payload.get("id"))
         return False
     try:
-        httpx.post(settings.n8n_escalation_webhook, json=case_payload, timeout=8).raise_for_status()
+        httpx.post(
+            settings.n8n_escalation_webhook,
+            json=case_payload,
+            headers={"User-Agent": "SehatSaathi-Backend/1.0"},
+            timeout=8,
+        ).raise_for_status()
         return True
     except Exception as exc:
         log.warning("Escalation webhook failed: %s", exc)

@@ -29,6 +29,7 @@ const ACTION_LABEL: Record<string, string> = {
   triaged: "Triaged",
   slot_held: "Held a slot",
   escalated: "Alerted duty doctor",
+  escalation_pending: "Call-back needed (alert not sent)",
   approved: "Approved booking",
   rejected: "Declined",
   called_back: "Called patient back",

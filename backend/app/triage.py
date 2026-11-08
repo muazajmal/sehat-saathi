@@ -278,6 +278,25 @@ def gemini_triage(message: str, timeout: float = 12.0) -> TriageResult | None:
         return None
 
 
+def _flag_key(flag: str) -> frozenset[str]:
+    words = re.findall(r"[a-z]+", flag.lower())
+    stem = {"breathing": "breath", "breathe": "breath", "difficult": "difficulty", "fainted": "faint",
+            "fainting": "faint", "seizures": "seizure", "bleed": "bleeding"}
+    return frozenset(stem.get(w, w) for w in words if w not in {"of", "in", "a", "the", "and"})
+
+
+def merge_flags(rule_flags: list[str], ai_flags: list[str]) -> list[str]:
+    """Rule labels first (they're never dropped), then AI labels that add something new.
+    "Chest pain" / "chest pain" and "Breathing difficulty" / "Difficulty breathing" count as one."""
+    out, seen = [], []
+    for flag in [*rule_flags, *ai_flags]:
+        key = _flag_key(flag)
+        if key and not any(key <= k or k <= key for k in seen):
+            out.append(flag)
+            seen.append(key)
+    return out[:8]
+
+
 def triage(message: str) -> TriageResult:
     rules = rules_triage(message)
     ai = gemini_triage(message)
@@ -289,7 +308,7 @@ def triage(message: str) -> TriageResult:
     if URGENCY_RANK[rules.urgency] > URGENCY_RANK[ai.urgency]:
         final.urgency = rules.urgency
         final.reply_ur = default_reply(rules.urgency, final.language)
-    final.red_flags = sorted(set(ai.red_flags) | set(rules.red_flags))
+    final.red_flags = merge_flags(rules.red_flags, ai.red_flags)
     if final.specialty == "general" and rules.specialty != "general":
         final.specialty = rules.specialty
     if not final.reply_ur:

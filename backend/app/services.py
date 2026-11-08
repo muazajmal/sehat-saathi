@@ -98,8 +98,10 @@ def create_intake(db: Session, phone: str, name: str, message: str, channel: str
 
     notify.send_whatsapp(patient.phone, result.reply_ur)
     if case.needs_callback:
-        notify.escalate(case_payload(case))
-        audit(db, "system", "escalated", "Duty doctor alerted for a call-back", case.id)
+        if notify.escalate(case_payload(case)):
+            audit(db, "system", "escalated", "Duty doctor alerted for a call-back (n8n)", case.id)
+        else:
+            audit(db, "system", "escalation_pending", "Call-back needed. Alert not sent; desk shows it at the top.", case.id)
         db.commit()
     return case
 
