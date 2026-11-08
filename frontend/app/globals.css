@@ -1220,12 +1220,87 @@ a.sslot:hover {
   line-height: 1.5;
 }
 .transport .mini-map {
+  display: block;
   width: 100%;
-  height: 200px;
+  height: auto;
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 12px;
   margin-bottom: 14px;
-  filter: saturate(0.85);
+  background: radial-gradient(ellipse at 50% 40%, rgba(95, 227, 196, 0.06), transparent 70%), var(--surface);
+}
+.mini-map text {
+  font: 600 12px var(--sans, system-ui, sans-serif);
+  fill: var(--muted);
+}
+.mini-map .mm-route {
+  stroke: var(--mint);
+  stroke-width: 2;
+  stroke-dasharray: 5 6;
+  opacity: 0.7;
+}
+.mini-map .mm-route.to-hospital {
+  stroke: var(--cyan);
+}
+.mini-map .mm-hospital rect {
+  fill: var(--paper-2);
+  stroke: var(--line-strong);
+}
+.mini-map .mm-hospital .mm-cross {
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+.mini-map .mm-hospital.on rect {
+  fill: rgba(255, 122, 131, 0.18);
+  stroke: var(--urgent);
+}
+.mini-map .mm-hospital.on .mm-cross {
+  stroke: var(--urgent);
+}
+.mini-map .mm-hospital.on text {
+  fill: var(--ink);
+}
+.mini-map .mm-responder circle {
+  fill: var(--cyan);
+  opacity: 0.55;
+}
+.mini-map .mm-responder.on circle {
+  opacity: 1;
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+.mini-map .mm-responder.on text {
+  fill: var(--cyan);
+}
+.mini-map .mm-patient circle {
+  fill: var(--mint);
+}
+.mini-map .mm-patient text {
+  fill: var(--mint);
+}
+.mini-map .mm-pulse {
+  fill: none !important;
+  stroke: var(--mint);
+  stroke-width: 2;
+  opacity: 0.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mm-pulse 1.8s ease-out infinite;
+}
+@keyframes mm-pulse {
+  from {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mini-map .mm-pulse {
+    animation: none;
+  }
 }
 .transport .reason {
   margin: 0 0 10px;

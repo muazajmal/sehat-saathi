@@ -18,14 +18,84 @@ const STEPS: { id: DispatchStatus; label: string }[] = [
   { id: "at_hospital", label: "At hospital" },
 ];
 
-function osmEmbed(points: { lat: number; lng: number }[], marker: { lat: number; lng: number }) {
-  const lats = points.map((p) => p.lat);
-  const lngs = points.map((p) => p.lng);
-  const pad = 0.006;
-  const bbox = [Math.min(...lngs) - pad, Math.min(...lats) - pad, Math.max(...lngs) + pad, Math.max(...lats) + pad]
-    .map((n) => n.toFixed(5))
-    .join(",");
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker.lat},${marker.lng}`;
+type Pt = { lat: number; lng: number };
+
+// A self-drawn map: no outside map service needed, so it always works in a demo.
+function MiniMap({
+  patient,
+  hospitals,
+  hospitalId,
+  responders,
+  responderId,
+}: {
+  patient: Pt;
+  hospitals: (Pt & { id: string; short: string })[];
+  hospitalId: string | null;
+  responders: (Pt & { id: number; name: string })[];
+  responderId: number | null;
+}) {
+  const W = 560;
+  const H = 220;
+  const pad = 34;
+  const all = [patient, ...hospitals, ...responders];
+  const minLat = Math.min(...all.map((p) => p.lat));
+  const maxLat = Math.max(...all.map((p) => p.lat));
+  const minLng = Math.min(...all.map((p) => p.lng));
+  const maxLng = Math.max(...all.map((p) => p.lng));
+  // Keep north up and roughly true proportions (1 degree of longitude is shorter here than 1 of latitude).
+  const kx = Math.cos((patient.lat * Math.PI) / 180);
+  const spanX = Math.max((maxLng - minLng) * kx, 0.005);
+  const spanY = Math.max(maxLat - minLat, 0.005);
+  const scale = Math.min((W - pad * 2) / spanX, (H - pad * 2) / spanY);
+  const ox = (W - spanX * scale) / 2;
+  const oy = (H - spanY * scale) / 2;
+  const xy = (p: Pt) => ({ x: ox + (p.lng - minLng) * kx * scale, y: H - (oy + (p.lat - minLat) * scale) });
+  const P = xy(patient);
+  const hosp = hospitals.find((h) => h.id === hospitalId);
+  const resp = responders.find((r) => r.id === responderId);
+  const H1 = hosp ? xy(hosp) : null;
+  const R1 = resp ? xy(resp) : null;
+  const label = (t: string) => (t.length > 22 ? t.slice(0, 21) + "…" : t);
+
+  return (
+    <svg className="mini-map" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Map of the patient, responders and hospitals">
+      <defs>
+        <pattern id="mm-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+          <path d="M28 0H0V28" fill="none" stroke="currentColor" strokeOpacity="0.07" />
+        </pattern>
+      </defs>
+      <rect width={W} height={H} fill="url(#mm-grid)" />
+      {R1 && <line x1={R1.x} y1={R1.y} x2={P.x} y2={P.y} className="mm-route" />}
+      {H1 && <line x1={P.x} y1={P.y} x2={H1.x} y2={H1.y} className="mm-route to-hospital" />}
+      {hospitals.map((h) => {
+        const p = xy(h);
+        const on = h.id === hospitalId;
+        return (
+          <g key={h.id} className={`mm-hospital${on ? " on" : ""}`}>
+            <rect x={p.x - 7} y={p.y - 7} width="14" height="14" rx="3" />
+            <path d={`M${p.x - 4} ${p.y}H${p.x + 4}M${p.x} ${p.y - 4}V${p.y + 4}`} className="mm-cross" />
+            {on && <text x={p.x + 11} y={p.y + 4}>{label(h.short)}</text>}
+            <title>{h.short}</title>
+          </g>
+        );
+      })}
+      {responders.map((r) => {
+        const p = xy(r);
+        const on = r.id === responderId;
+        return (
+          <g key={r.id} className={`mm-responder${on ? " on" : ""}`}>
+            <circle cx={p.x} cy={p.y} r={on ? 6 : 4} />
+            {on && <text x={p.x + 10} y={p.y - 8}>{label(r.name.replace(/^Demo Responder \d+ \((.*)\)$/, "$1"))}</text>}
+          </g>
+        );
+      })}
+      <g className="mm-patient">
+        <circle cx={P.x} cy={P.y} r="14" className="mm-pulse" />
+        <circle cx={P.x} cy={P.y} r="6" />
+        <text x={P.x + 12} y={P.y + 18}>Patient</text>
+      </g>
+    </svg>
+  );
 }
 
 export default function TransportPanel({
@@ -118,6 +188,11 @@ export default function TransportPanel({
           >
             Use a sample Multan location (demo)
           </button>
+          {error && (
+            <div className="error" style={{ marginTop: 12 }}>
+              {error}
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -132,14 +207,12 @@ export default function TransportPanel({
             </span>
           </p>
 
-          <iframe
-            className="mini-map"
-            title="Patient location"
-            loading="lazy"
-            src={osmEmbed(
-              [loc, ...(hospital ? [hospital] : []), ...(d ? [d.responder] : responder ? [responder] : [])],
-              loc,
-            )}
+          <MiniMap
+            patient={loc}
+            hospitals={t.hospitals}
+            hospitalId={d ? d.hospital_id : hospitalId}
+            responders={d ? [d.responder] : t.responders.slice(0, 3)}
+            responderId={d ? d.responder.id : responderId}
           />
 
           {d && (
