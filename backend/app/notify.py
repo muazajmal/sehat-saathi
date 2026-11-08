@@ -51,3 +51,21 @@ def escalate(case_payload: dict) -> bool:
     except Exception as exc:
         log.warning("Escalation webhook failed: %s", exc)
         return False
+
+
+def dispatch_alert(payload: dict) -> bool:
+    """Tell n8n a responder was sent, so it can message them the pickup and hospital."""
+    if not settings.n8n_dispatch_webhook:
+        log.info("[dispatch:dry-run] case=%s responder=%s", payload.get("case_id"), payload.get("responder"))
+        return False
+    try:
+        httpx.post(
+            settings.n8n_dispatch_webhook,
+            json=payload,
+            headers={"User-Agent": "SehatSaathi-Backend/1.0"},
+            timeout=8,
+        ).raise_for_status()
+        return True
+    except Exception as exc:
+        log.warning("Dispatch webhook failed: %s", exc)
+        return False

@@ -42,7 +42,84 @@ export interface Stats {
   approved_today: number;
   open_slots_today: number;
   avg_review_minutes: number | null;
+  dispatches_active?: number;
+  responders_free?: number;
 }
+
+export interface PatientLocation {
+  lat: number;
+  lng: number;
+  label: string;
+  source: "web" | "whatsapp" | "sample" | "staff";
+  at: string;
+}
+
+export interface Responder {
+  id: number;
+  name: string;
+  phone: string;
+  vehicle: string;
+  area: string;
+  lat: number;
+  lng: number;
+  status: "available" | "busy" | "off";
+  is_demo: boolean;
+}
+
+export interface ResponderOption extends Responder {
+  distance_km: number;
+  eta_minutes: number;
+}
+
+export interface HospitalOption {
+  id: string;
+  name: string;
+  short: string;
+  area: string;
+  lat: number;
+  lng: number;
+  specialties: string[];
+  phone: string;
+  distance_km: number;
+  eta_minutes: number;
+  match: boolean;
+}
+
+export type DispatchStatus = "dispatched" | "reached_patient" | "at_hospital" | "cancelled";
+
+export interface Dispatch {
+  id: number;
+  case_id: number;
+  responder: Responder;
+  hospital_id: string;
+  hospital_name: string;
+  tier: "emergency" | "transport";
+  status: DispatchStatus;
+  eta_minutes: number;
+  approved_by: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Transport {
+  case_id: number;
+  tier: "emergency" | "transport";
+  call_1122: boolean;
+  need: string;
+  reason: string;
+  location: PatientLocation | null;
+  hospitals: HospitalOption[];
+  responders: ResponderOption[];
+  dispatch: Dispatch | null;
+}
+
+// Where the website demo puts a visitor who can't share a real location (matches the API).
+export const SAMPLE_LOCATION = { lat: 30.2297, lng: 71.4789, label: "Gulgasht Colony, Multan (sample location)" };
+export const IN_MULTAN = (lat: number, lng: number) => lat >= 29.95 && lat <= 30.4 && lng >= 71.25 && lng <= 71.7;
+export const mapLink = (lat: number, lng: number) => `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+export const directionsLink = (from: { lat: number; lng: number }, to: { lat: number; lng: number }) =>
+  `https://www.google.com/maps/dir/?api=1&origin=${from.lat},${from.lng}&destination=${to.lat},${to.lng}`;
 
 export interface AuditEvent {
   id: number;
@@ -107,6 +184,19 @@ export const api = {
     call<Case>(`/api/cases/${id}/reject`, { method: "POST", body: JSON.stringify({ staff, note }) }),
   called: (id: number, staff: string, note: string) =>
     call<Case>(`/api/cases/${id}/called`, { method: "POST", body: JSON.stringify({ staff, note }) }),
+  shareLocation: (id: number, loc: { lat: number; lng: number; label: string; source: PatientLocation["source"] }) =>
+    call<PatientLocation>(`/api/cases/${id}/location`, { method: "POST", body: JSON.stringify(loc) }),
+  transport: (id: number) => call<Transport>(`/api/cases/${id}/transport`),
+  dispatch: (id: number, staff: string, responder_id: number, hospital_id: string, note: string) =>
+    call<Dispatch>(`/api/cases/${id}/dispatch`, {
+      method: "POST",
+      body: JSON.stringify({ staff, responder_id, hospital_id, note }),
+    }),
+  dispatchStatus: (dispatchId: number, staff: string, status: Exclude<DispatchStatus, "dispatched">, note = "") =>
+    call<Dispatch>(`/api/dispatches/${dispatchId}/status`, {
+      method: "POST",
+      body: JSON.stringify({ staff, status, note }),
+    }),
 };
 
 // ---------- formatting helpers ----------

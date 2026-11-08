@@ -639,7 +639,7 @@ textarea {
 
 .statline {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
   padding: 0 32px 20px;
 }
@@ -1183,4 +1183,163 @@ a.sslot:hover {
     padding-left: 16px;
     padding-right: 16px;
   }
+}
+
+/* ---------- Getting to hospital ---------- */
+.transport .rescue {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 122, 131, 0.45);
+  background: var(--urgent-bg);
+  line-height: 1.5;
+}
+.transport .rescue strong {
+  color: var(--urgent);
+}
+.transport .no-location p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.transport .loc-line {
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.transport .muted {
+  color: var(--muted);
+}
+.transport .fine {
+  font-size: 0.8125rem;
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+.transport .mini-map {
+  width: 100%;
+  height: 200px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  filter: saturate(0.85);
+}
+.transport .reason {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+.transport .choice {
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+  display: grid;
+  gap: 8px;
+}
+.transport .choice legend {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+  padding: 0;
+}
+.transport .choice label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.transport .choice label.on {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+.transport .choice input {
+  margin-top: 4px;
+  accent-color: var(--mint);
+}
+.transport .choice small {
+  display: block;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.transport .trip {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+.transport .trip p {
+  margin: 6px 0;
+  line-height: 1.5;
+}
+.transport .steps {
+  list-style: none;
+  display: flex;
+  gap: 6px;
+  padding: 0;
+  margin: 0 0 8px;
+  flex-wrap: wrap;
+}
+.transport .steps li {
+  font-size: 0.8125rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.transport .steps li.done {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+.transport .steps li.now {
+  color: var(--on-teal);
+  background: var(--mint);
+  border-color: transparent;
+  font-weight: 600;
+}
+.transport .steps li.off {
+  text-decoration: line-through;
+}
+
+/* Demo chat: emergency + location actions */
+.chat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-self: flex-start;
+  max-width: 92%;
+}
+.chat-actions a,
+.chat-actions button {
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.chat-actions .sos {
+  border-color: rgba(255, 122, 131, 0.6);
+  background: var(--urgent-bg);
+  color: var(--urgent);
+  font-weight: 600;
+}
+.chat-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.chat-note {
+  align-self: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 2px 8px;
 }

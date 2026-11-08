@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell, { useStaff } from "./AppShell";
+import TransportPanel from "./TransportPanel";
 import {
   ago,
   api,
@@ -30,6 +31,11 @@ const ACTION_LABEL: Record<string, string> = {
   slot_held: "Held a slot",
   escalated: "Alerted duty doctor",
   escalation_pending: "Call-back needed (alert not sent)",
+  location_shared: "Shared location",
+  dispatched: "Sent a responder",
+  dispatch_reached_patient: "Responder reached patient",
+  dispatch_at_hospital: "Patient arrived at hospital",
+  dispatch_cancelled: "Cancelled the responder",
   approved: "Approved booking",
   rejected: "Declined",
   called_back: "Called patient back",
@@ -119,6 +125,10 @@ export default function Desk() {
         <Stat value={stats?.callbacks_open} label="Call-backs open" alarm={!!stats?.callbacks_open} />
         <Stat value={stats?.approved_today} label="Booked today" />
         <Stat value={stats?.open_slots_today} label="Free slots today" />
+        <Stat
+          value={stats?.dispatches_active ?? 0}
+          label={`Responders out, ${stats?.responders_free ?? 0} free`}
+        />
         <Stat
           value={stats?.avg_review_minutes == null ? "–" : `${stats.avg_review_minutes} min`}
           label="Average review time"
@@ -328,6 +338,13 @@ function CaseDetail({
           </p>
         </div>
       </div>
+
+      {(c.urgency !== "routine" || c.needs_callback) && (
+        <TransportPanel caseId={c.id} staff={staff} onChanged={(msg) => {
+          onDecided(c, msg);
+          api.audit(c.id).then(setLog).catch(() => {});
+        }} />
+      )}
 
       {pending ? (
         <div className="panel glass decide">

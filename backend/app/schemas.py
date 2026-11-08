@@ -9,6 +9,10 @@ class IntakeIn(BaseModel):
     name: str = Field(default="", max_length=120)
     message: str = Field(min_length=2, max_length=4000)
     channel: Literal["whatsapp", "web", "n8n"] = "web"
+    # Optional: where the patient is, if they shared it with the message.
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+    location_label: str = Field(default="", max_length=200)
 
 
 class SlotOut(BaseModel):
@@ -92,6 +96,8 @@ class StatsOut(BaseModel):
     approved_today: int
     open_slots_today: int
     avg_review_minutes: float | None
+    dispatches_active: int = 0
+    responders_free: int = 0
 
 
 class LeadIn(BaseModel):
@@ -120,3 +126,94 @@ class ScheduleSlot(BaseModel):
     case_id: int | None = None
     patient: str | None = None
     urgency: str | None = None
+
+
+# ---------- Getting patients to hospital ----------
+
+class LocationIn(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+    label: str = Field(default="", max_length=200)
+    source: Literal["web", "whatsapp", "sample", "staff"] = "web"
+
+
+class LocationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    lat: float
+    lng: float
+    label: str
+    source: str
+    at: datetime
+
+
+class ResponderOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    phone: str
+    vehicle: str
+    area: str
+    lat: float
+    lng: float
+    status: str
+    is_demo: bool
+
+
+class ResponderOption(ResponderOut):
+    distance_km: float
+    eta_minutes: int
+
+
+class HospitalOption(BaseModel):
+    id: str
+    name: str
+    short: str
+    area: str
+    lat: float
+    lng: float
+    specialties: list[str]
+    phone: str
+    distance_km: float
+    eta_minutes: int
+    match: bool
+
+
+class DispatchOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    case_id: int
+    responder: ResponderOut
+    hospital_id: str
+    hospital_name: str = ""
+    tier: str
+    status: str
+    eta_minutes: int
+    approved_by: str
+    note: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class TransportOut(BaseModel):
+    case_id: int
+    tier: Literal["emergency", "transport"]
+    call_1122: bool
+    need: str
+    reason: str
+    location: LocationOut | None
+    hospitals: list[HospitalOption]
+    responders: list[ResponderOption]
+    dispatch: DispatchOut | None
+
+
+class DispatchIn(BaseModel):
+    staff: str = Field(min_length=2, max_length=120)
+    responder_id: int
+    hospital_id: str = Field(min_length=2, max_length=40)
+    note: str = Field(default="", max_length=1000)
+
+
+class DispatchStatusIn(BaseModel):
+    staff: str = Field(min_length=2, max_length=120)
+    status: Literal["reached_patient", "at_hospital", "cancelled"]
+    note: str = Field(default="", max_length=1000)

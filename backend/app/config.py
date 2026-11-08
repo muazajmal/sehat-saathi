@@ -31,6 +31,7 @@ class Settings:
     whatsapp_phone_id: str = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
     whatsapp_verify_token: str = os.getenv("WHATSAPP_VERIFY_TOKEN", "sehat-saathi-verify")
     n8n_escalation_webhook: str = os.getenv("N8N_ESCALATION_WEBHOOK", "")
+    n8n_dispatch_webhook: str = os.getenv("N8N_DISPATCH_WEBHOOK", "")
     clinic_name: str = os.getenv("CLINIC_NAME", "Shifa Family Clinic")
     cors_origins: list[str] = os.getenv(
         "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"

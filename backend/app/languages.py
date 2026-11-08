@@ -195,3 +195,68 @@ def reply(kind: str, language: str, **fields: str) -> str:
 
 def language_name(code: str) -> str:
     return LANGUAGES.get(code, (code, False))[0]
+
+
+# ---------- Getting to hospital ----------
+# Sent when a staff member approves a dispatch. {responder} {hospital} {eta}.
+# "emergency" = urgent case: 1122 always comes first.
+
+_DISPATCH_UR = {
+    "dispatch_transport": "صحت ساتھی کے رضاکار {responder} آپ کی طرف روانہ ہو گئے ہیں (تقریباً {eta} منٹ)۔ "
+                          "وہ آپ کو {hospital} لے جائیں گے۔ اپنا فون آن رکھیں۔",
+    "dispatch_emergency": "اگر آپ نے ابھی تک 1122 پر کال نہیں کی تو فوراً کریں۔ صحت ساتھی کے رضاکار {responder} بھی "
+                          "مدد کے لیے آپ کی طرف آ رہے ہیں (تقریباً {eta} منٹ) اور آپ سے {hospital} میں ملیں گے۔",
+}
+
+DISPATCH_MESSAGES: dict[str, dict[str, str]] = {
+    "ur": _DISPATCH_UR,
+    "roman_ur": _DISPATCH_UR,
+    "bal": _DISPATCH_UR,
+    "en": {
+        "dispatch_transport": "A Sehat Saathi responder, {responder}, is on the way to you (about {eta} min). "
+                              "They will take you to {hospital}. Please keep your phone on.",
+        "dispatch_emergency": "Please call 1122 now if you have not already. A Sehat Saathi responder, {responder}, "
+                              "is also on the way (about {eta} min) to help and to meet you at {hospital}.",
+    },
+    "pa": {
+        "dispatch_transport": "صحت ساتھی دا رضاکار {responder} تہاڈے ول آ رہیا اے (لگ بھگ {eta} منٹ)۔ "
+                              "اوہ تہانوں {hospital} لے جاوے گا۔ اپنا فون چالو رکھو۔",
+        "dispatch_emergency": "جے تسیں حالے تک 1122 تے کال نہیں کیتی تے فوراً کرو۔ صحت ساتھی دا رضاکار {responder} وی "
+                              "مدد لئی آ رہیا اے (لگ بھگ {eta} منٹ) تے تہانوں {hospital} وچ ملے گا۔",
+    },
+    "skr": {
+        "dispatch_transport": "صحت ساتھی دا رضاکار {responder} تہاڈے ول آندا پئے (تقریباً {eta} منٹ)۔ "
+                              "او تہاکوں {hospital} گھن ویسی۔ اپݨا فون چالو رکھو۔",
+        "dispatch_emergency": "جے تساں ہݨ تئیں 1122 تے کال کائنی کیتی تاں فوراً کرو۔ صحت ساتھی دا رضاکار {responder} وی "
+                              "مدد کیتے آندا پئے (تقریباً {eta} منٹ) تے تہاکوں {hospital} وچ ملسی۔",
+    },
+    "ps": {
+        "dispatch_transport": "د Sehat Saathi رضاکار {responder} ستاسو په لور روان دی (شاوخوا {eta} دقیقې). "
+                              "هغه به تاسو {hospital} ته یوسي. خپل ټیلیفون روښانه وساتئ.",
+        "dispatch_emergency": "که مو تر اوسه 1122 ته زنګ نه دی وهلی، همدا اوس یې ووهئ. د Sehat Saathi رضاکار {responder} هم "
+                              "د مرستې لپاره درځي (شاوخوا {eta} دقیقې) او په {hospital} کې به له تاسو سره وي.",
+    },
+    "sd": {
+        "dispatch_transport": "Sehat Saathi جو رضاڪار {responder} توهان ڏانهن اچي رهيو آهي (لڳ ڀڳ {eta} منٽ). "
+                              "هو توهان کي {hospital} وٺي ويندو. پنهنجو فون چالو رکو.",
+        "dispatch_emergency": "جيڪڏهن توهان اڃا تائين 1122 تي ڪال نه ڪئي آهي ته هاڻي ئي ڪريو. Sehat Saathi جو رضاڪار {responder} "
+                              "به مدد لاءِ اچي رهيو آهي (لڳ ڀڳ {eta} منٽ) ۽ توهان سان {hospital} ۾ ملندو.",
+    },
+    "ar": {
+        "dispatch_transport": "مُسعف من Sehat Saathi، {responder}، في طريقه إليك (حوالي {eta} دقيقة). "
+                              "سينقلك إلى {hospital}. يرجى إبقاء هاتفك مفتوحاً.",
+        "dispatch_emergency": "يرجى الاتصال بالرقم 1122 الآن إن لم تفعل بعد. مُسعف من Sehat Saathi، {responder}، "
+                              "في طريقه أيضاً (حوالي {eta} دقيقة) للمساعدة ولمقابلتك في {hospital}.",
+    },
+    "fa": {
+        "dispatch_transport": "یک امدادگر Sehat Saathi، {responder}، در راه است (حدود {eta} دقیقه). "
+                              "او شما را به {hospital} می‌برد. لطفاً تلفن خود را روشن نگه دارید.",
+        "dispatch_emergency": "اگر هنوز با 1122 تماس نگرفته‌اید، همین حالا تماس بگیرید. یک امدادگر Sehat Saathi، {responder}، "
+                              "هم برای کمک در راه است (حدود {eta} دقیقه) و در {hospital} به شما می‌پیوندد.",
+    },
+}
+
+
+def dispatch_reply(tier: str, language: str, **fields: str) -> str:
+    table = DISPATCH_MESSAGES.get(language) or DISPATCH_MESSAGES["en"]
+    return table[f"dispatch_{tier}"].format(**fields)

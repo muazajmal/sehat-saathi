@@ -670,6 +670,51 @@
 .feat-visual {
   margin-top: 22px;
 }
+.feat-full {
+  grid-column: 1 / -1;
+}
+.route-visual {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.route-visual li {
+  position: relative;
+  padding: 10px 14px 10px 34px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+.route-visual li::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 10px rgba(95, 227, 196, 0.6);
+}
+.route-visual li small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.route-visual .sos-chip {
+  color: var(--urgent);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-color: rgba(255, 122, 131, 0.35);
+  background: var(--urgent-bg);
+}
+.route-visual .sos-chip::before {
+  background: var(--urgent);
+  box-shadow: 0 0 10px rgba(255, 122, 131, 0.6);
+}
 .feat-wide .feat-visual {
   margin-top: 0;
 }

@@ -61,6 +61,9 @@ def seed(reset: bool = False):
     with SessionLocal() as db:
         empty = not db.scalar(select(func.count(Slot.id)))
         top_up_slots(db)
+        from .dispatch import seed_responders
+
+        seed_responders(db)
         if empty:
             for phone, name, msg in DEMO_MESSAGES:
                 create_intake(db, phone, name, msg, "whatsapp")

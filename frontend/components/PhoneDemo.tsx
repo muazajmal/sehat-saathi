@@ -2,7 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { api, ApiError, languageLabel, scriptClass, slotTime, URGENCY_LABEL, type Case } from "../lib/api";
+import {
+  api,
+  ApiError,
+  IN_MULTAN,
+  languageLabel,
+  SAMPLE_LOCATION,
+  scriptClass,
+  slotTime,
+  URGENCY_LABEL,
+  type Case,
+} from "../lib/api";
 
 const SAMPLES: { label: string; text: string }[] = [
   { label: "Chest pain", text: "Mere abbu ko 20 minute se seene mein dard hai aur paseena aa raha hai" },
@@ -20,7 +30,9 @@ type Msg =
   | { kind: "patient"; text: string }
   | { kind: "bot"; text: string; language?: string }
   | { kind: "typing" }
-  | { kind: "doctor"; c: Case };
+  | { kind: "doctor"; c: Case }
+  | { kind: "actions"; c: Case }
+  | { kind: "note"; text: string };
 
 export default function PhoneDemo() {
   const [msgs, setMsgs] = useState<Msg[]>([
@@ -29,6 +41,8 @@ export default function PhoneDemo() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locating, setLocating] = useState<number | null>(null);
+  const [shared, setShared] = useState<number[]>([]);
   const chatRef = useRef<HTMLDivElement>(null);
   // A stable demo phone number per browser so repeat messages group under one patient.
   const phone = useRef("+92300" + Math.floor(1000000 + Math.random() * 8999999));
@@ -49,6 +63,7 @@ export default function PhoneDemo() {
       setMsgs((m) => [
         ...m.filter((x) => x.kind !== "typing"),
         { kind: "bot", text: c.reply_ur, language: c.language },
+        ...(c.urgency !== "routine" ? [{ kind: "actions" as const, c }] : []),
         { kind: "doctor", c },
       ]);
     } catch (e) {
@@ -56,6 +71,40 @@ export default function PhoneDemo() {
       setError(e instanceof ApiError ? e.message : "Something went wrong sending that message.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  // Share the visitor's real location if they're in Multan; otherwise use a clearly-labelled sample.
+  async function shareLocation(c: Case) {
+    setLocating(c.id);
+    const here = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      if (!("geolocation" in navigator)) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => resolve(null),
+        { timeout: 7000, maximumAge: 60000 },
+      );
+    });
+    const real = here && IN_MULTAN(here.lat, here.lng);
+    const loc = real
+      ? { lat: here!.lat, lng: here!.lng, label: "Shared from this phone", source: "web" as const }
+      : { ...SAMPLE_LOCATION, source: "sample" as const };
+    try {
+      await api.shareLocation(c.id, loc);
+      setShared((s) => [...s, c.id]);
+      setMsgs((m) => [
+        ...m,
+        {
+          kind: "note",
+          text: real
+            ? "Location shared. The clinic can now send a Sehat Saathi responder to take you to hospital."
+            : "Demo: your real location wasn't available or isn't in Multan, so a sample one was used (Gulgasht Colony). The clinic can now send a responder.",
+        },
+      ]);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Couldn't share the location.");
+    } finally {
+      setLocating(null);
     }
   }
 
@@ -76,6 +125,28 @@ export default function PhoneDemo() {
           {msgs.map((m, i) => {
             if (m.kind === "typing") return <div key={i} className="bubble in typing">Reading your message…</div>;
             if (m.kind === "doctor") return <DoctorCard key={i} c={m.c} />;
+            if (m.kind === "note") return <p key={i} className="chat-note">{m.text}</p>;
+            if (m.kind === "actions")
+              return (
+                <div key={i} className="chat-actions">
+                  {m.c.urgency === "urgent" && (
+                    <a className="sos" href="tel:1122">
+                      Call 1122 now
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => shareLocation(m.c)}
+                    disabled={locating === m.c.id || shared.includes(m.c.id)}
+                  >
+                    {shared.includes(m.c.id)
+                      ? "Location shared"
+                      : locating === m.c.id
+                        ? "Getting location…"
+                        : "Share my location"}
+                  </button>
+                </div>
+              );
             const script = scriptClass(m.text, m.kind === "bot" ? m.language : undefined);
             return (
               <div
@@ -135,6 +206,7 @@ function DoctorCard({ c }: { c: Case }) {
           : "No slot free in the window. The doctor will pick one."}
       </p>
       {c.needs_callback && <p className="callback-flag">Duty doctor alerted to call back</p>}
+      {c.urgency !== "routine" && <p>If the patient shares a location, staff can send a Sehat Saathi responder.</p>}
       <p>
         Waiting for approval. <Link href={`/desk?case=${c.id}`}>Open on the desk</Link>
       </p>

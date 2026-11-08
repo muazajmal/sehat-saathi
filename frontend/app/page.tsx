@@ -81,6 +81,10 @@ const FAQ = [
     a: "It replies in the language the patient writes in, and sends the booking confirmation in that language too. It understands Urdu, Roman Urdu, English, Punjabi, Saraiki, Pashto, Sindhi, Balochi, Arabic and Persian, and with the AI switched on it can reply in almost any language. The danger-sign checks run in every one of these languages, so an emergency is caught even if the AI is down.",
   },
   {
+    q: "Does Sehat Saathi replace 1122?",
+    a: "No. For any emergency the patient is told to call Rescue 1122 straight away, with a one-tap button. Sehat Saathi responders help on top of that: they support the family and meet them at hospital, and they take seriously ill patients who are stable but have no transport to the nearest suitable government hospital. A staff member approves every trip.",
+  },
+  {
     q: "What if the AI service goes down?",
     a: "Triage falls back to the built-in danger-sign checks and keeps working. Nothing is lost, and every case still reaches your desk.",
   },
@@ -271,6 +275,33 @@ export default function Home() {
                 </li>
                 <li>
                   <b>Dr. Ayesha</b> approved booking
+                </li>
+              </ol>
+            </article>
+
+            <article className="feat feat-wide feat-full">
+              <div>
+                <h3>Gets them to hospital</h3>
+                <p>
+                  For a real emergency, the patient is told to call Rescue 1122 first, with one tap. When a patient is
+                  seriously ill or has no way to travel, they share their location and the desk suggests the right
+                  government hospital and the nearest free Sehat Saathi responder. A staff member approves, and the
+                  patient gets the responder&apos;s name and arrival time in their own language.
+                </p>
+              </div>
+              <ol className="feat-visual route-visual" aria-label="Example trip">
+                <li className="sos-chip">1122 advised first</li>
+                <li>
+                  <b>Patient shares location</b>
+                  <small>Gulgasht Colony, Multan</small>
+                </li>
+                <li>
+                  <b>Responder on the way</b>
+                  <small>Nearest free car, about 6 min</small>
+                </li>
+                <li>
+                  <b>Institute of Cardiology</b>
+                  <small>Chest pain goes to the heart hospital</small>
                 </li>
               </ol>
             </article>

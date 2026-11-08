@@ -91,3 +91,54 @@ class Lead(Base):
     phone: Mapped[str] = mapped_column(String(32))
     size: Mapped[str] = mapped_column(String(40), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class Responder(Base):
+    """A Sehat Saathi responder who can take patients to hospital (demo team for now)."""
+
+    __tablename__ = "responders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    phone: Mapped[str] = mapped_column(String(32), default="")
+    vehicle: Mapped[str] = mapped_column(String(60), default="Car")
+    area: Mapped[str] = mapped_column(String(120), default="")
+    lat: Mapped[float] = mapped_column()
+    lng: Mapped[float] = mapped_column()
+    status: Mapped[str] = mapped_column(String(16), default="available", index=True)  # available | busy | off
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CaseLocation(Base):
+    """Where the patient is, shared from WhatsApp or the website. One per case (latest wins)."""
+
+    __tablename__ = "case_locations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), unique=True, index=True)
+    lat: Mapped[float] = mapped_column()
+    lng: Mapped[float] = mapped_column()
+    label: Mapped[str] = mapped_column(String(200), default="")
+    source: Mapped[str] = mapped_column(String(20), default="web")  # web | whatsapp | sample | staff
+    at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class Dispatch(Base):
+    """A staff-approved trip: responder -> patient -> government hospital."""
+
+    __tablename__ = "dispatches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), index=True)
+    responder_id: Mapped[int] = mapped_column(ForeignKey("responders.id"))
+    hospital_id: Mapped[str] = mapped_column(String(40))
+    tier: Mapped[str] = mapped_column(String(16))  # emergency (1122 first) | transport
+    # dispatched -> reached_patient -> at_hospital, or cancelled
+    status: Mapped[str] = mapped_column(String(20), default="dispatched", index=True)
+    eta_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    approved_by: Mapped[str] = mapped_column(String(120))
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+    responder: Mapped[Responder] = relationship()

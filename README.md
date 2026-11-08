@@ -62,6 +62,13 @@ All optional. Everything runs without them; outbound messages are logged instead
 | `N8N_ESCALATION_WEBHOOK` | Urgent cases POST here so n8n can call the duty doctor (Retell AI / Twilio). |
 | `DATABASE_URL` | Supabase Postgres instead of SQLite (see `.env.example` for the format). |
 
+**Getting to hospital:** for urgent cases the patient is told to call Rescue 1122 first (one-tap button). When a
+patient shares their location (WhatsApp "Share location" or the website demo), the desk suggests the right Multan
+government hospital (chest pain to the Institute of Cardiology, children to the Children's Hospital, burns to the
+Burn Centre, otherwise the nearest general emergency) and the nearest free Sehat Saathi responder. A staff member
+approves the dispatch; the patient gets the responder's name and arrival time in their language, and n8n
+(`N8N_DISPATCH_WEBHOOK`) logs the trip with a ready message for the responder. Responders are a demo team for now.
+
 **Deploying (free, no card):** two Vercel projects from this repo.
 
 - `sehat-saathi-api`: root directory `backend` (FastAPI, entry `index.py`). Add a free Neon Postgres from
