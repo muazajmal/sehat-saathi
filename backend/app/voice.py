@@ -36,10 +36,20 @@ def transcribe(audio_b64: str, mime: str, ui_lang: str) -> str:
     }
     try:
         r = httpx.post(url, params={"key": settings.gemini_api_key}, json=body, timeout=25)
-        r.raise_for_status()
-        parts = r.json()["candidates"][0].get("content", {}).get("parts", [])
-        text = "".join(p.get("text", "") for p in parts).strip().strip('"').strip()
-    except Exception as exc:
-        log.warning("Transcription failed: %s", exc)
-        raise HTTPException(502, "Couldn't understand the recording right now. Please type instead, or try again.")
-    return text[:2000]
+    except httpx.HTTPError as exc:
+        log.warning("Transcription request failed: %s", type(exc).__name__)
+        raise HTTPException(502, "Couldn't reach the voice service. Please type instead, or try again.")
+    if r.status_code != 200:
+        # Log Gemini's own message, never the URL (it carries the key).
+        try:
+            reason = r.json().get("error", {}).get("message", "")[:300]
+        except ValueError:
+            reason = r.text[:300]
+        log.warning("Transcription failed: Gemini %s %s", r.status_code, reason)
+        raise HTTPException(502, f"Couldn't understand the recording right now (code {r.status_code}). "
+                                 "Please type instead, or try again.")
+    data = r.json()
+    candidates = data.get("candidates") or []
+    parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+    text = "".join(p.get("text", "") for p in parts).strip().strip('"').strip()
+    return text[:2000]  # empty when no speech was heard: the page says "we couldn't hear any words"

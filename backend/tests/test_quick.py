@@ -56,8 +56,7 @@ def test_voice_sends_audio_to_gemini_and_returns_text(monkeypatch):
     seen = {}
 
     class Resp:
-        def raise_for_status(self):
-            pass
+        status_code = 200
 
         def json(self):
             return {"candidates": [{"content": {"parts": [{"text": " میرے بچے کو بخار ہے \n"}]}}]}
