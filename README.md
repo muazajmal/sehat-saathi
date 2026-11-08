@@ -69,7 +69,9 @@ All optional. Everything runs without them; outbound messages are logged instead
   Optional: `GEMINI_API_KEY`.
 - `sehat-saathi`: root directory `frontend` (Next.js), with `NEXT_PUBLIC_API_URL` set to the API's URL.
 
-CORS already allows any `https://sehat-saathi*.vercel.app` origin (`CORS_ORIGIN_REGEX`).
+Live: website https://sehat-saathi-eta.vercel.app, API https://sehat-saathi-api.vercel.app. CORS only allows this
+project's own Vercel addresses (`CORS_ORIGIN_REGEX`). Urgent cases are also sent to an n8n webhook
+(`N8N_ESCALATION_WEBHOOK`) that logs them to the "Sehat Saathi - Urgent Alerts" data table.
 
 ## Safety design (say this in the pitch)
 

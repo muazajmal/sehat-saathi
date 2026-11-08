@@ -35,8 +35,12 @@ class Settings:
     cors_origins: list[str] = os.getenv(
         "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
     ).split(",")
-    # Lets every Vercel deploy of this project (production and previews) call the API.
-    cors_origin_regex: str = os.getenv("CORS_ORIGIN_REGEX", r"https://sehat-saathi[a-z0-9-]*\.vercel\.app")
+    # Only this project's own Vercel sites may call the API: the production address and its
+    # preview deploys. (Plain sehat-saathi.vercel.app belongs to someone else, so it is not allowed.)
+    cors_origin_regex: str = os.getenv(
+        "CORS_ORIGIN_REGEX",
+        r"https://sehat-saathi-(eta|[a-z0-9]+-muazajmal112-9797s-projects)\.vercel\.app",
+    )
     tz = ZoneInfo(os.getenv("CLINIC_TZ", "Asia/Karachi"))
 
 
