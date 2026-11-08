@@ -39,8 +39,8 @@ def set_location(db: Session, case_id: int, lat: float, lng: float, label: str, 
         loc = CaseLocation(case_id=case.id, lat=lat, lng=lng)
         db.add(loc)
     loc.lat, loc.lng, loc.label, loc.source, loc.at = lat, lng, label[:200], source, now()
-    audit(db, "patient" if source in ("web", "whatsapp") else source, "location_shared",
-          label or f"{lat:.4f}, {lng:.4f}", case.id)
+    actor = "Patient" if source in ("web", "whatsapp") else "Staff"
+    audit(db, actor, "location_shared", label or f"{lat:.4f}, {lng:.4f}", case.id)
     db.commit()
     return loc
 
