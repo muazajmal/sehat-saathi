@@ -69,6 +69,16 @@ Burn Centre, otherwise the nearest general emergency) and the nearest free Sehat
 approves the dispatch; the patient gets the responder's name and arrival time in their language, and n8n
 (`N8N_DISPATCH_WEBHOOK`) logs the trip with a ready message for the responder. Responders are a demo team for now.
 
+**Public patient website** (`/patient`): anyone who is unwell writes their problem in any language, adds a phone
+number and consents. They get a reply in their language at once, a one-tap Call 1122 for emergencies, and a private
+status link (`/patient/status`) showing the doctor's decision and, if a responder was sent, how far away they are,
+live. Responders get their own private link (`/responder`) to share GPS from their phone; the desk shows the
+distance and arrival time to the patient and the hospital. Demo responders are simulated (labelled, sped up).
+
+**Staff access code:** set `STAFF_KEY` on the API to lock the clinic desk and all patient data. Patient and
+responder pages only ever see their own case through their private links. Leave `STAFF_KEY` empty only for demos
+with sample data.
+
 **Deploying (free, no card):** two Vercel projects from this repo.
 
 - `sehat-saathi-api`: root directory `backend` (FastAPI, entry `index.py`). Add a free Neon Postgres from

@@ -12,6 +12,7 @@ import {
   slotTime,
   URGENCY_LABEL,
   type Case,
+  type IntakeResult,
 } from "../lib/api";
 
 const SAMPLES: { label: string; text: string }[] = [
@@ -31,7 +32,7 @@ type Msg =
   | { kind: "bot"; text: string; language?: string }
   | { kind: "typing" }
   | { kind: "doctor"; c: Case }
-  | { kind: "actions"; c: Case }
+  | { kind: "actions"; c: IntakeResult }
   | { kind: "note"; text: string };
 
 export default function PhoneDemo() {
@@ -75,7 +76,7 @@ export default function PhoneDemo() {
   }
 
   // Share the visitor's real location if they're in Multan; otherwise use a clearly-labelled sample.
-  async function shareLocation(c: Case) {
+  async function shareLocation(c: IntakeResult) {
     setLocating(c.id);
     const here = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
       if (!("geolocation" in navigator)) return resolve(null);
@@ -90,7 +91,7 @@ export default function PhoneDemo() {
       ? { lat: here!.lat, lng: here!.lng, label: "Shared from this phone", source: "web" as const }
       : { ...SAMPLE_LOCATION, source: "sample" as const };
     try {
-      await api.shareLocation(c.id, loc);
+      await api.patientLocation(c.id, c.access_token, loc.lat, loc.lng, loc.label);
       setShared((s) => [...s, c.id]);
       setMsgs((m) => [
         ...m,

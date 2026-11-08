@@ -35,6 +35,37 @@ export interface Case {
   reviewed_at: string | null;
 }
 
+export interface IntakeResult extends Case {
+  access_token: string;
+  status_link: string;
+}
+
+export interface PatientStatus {
+  case_id: number;
+  clinic: string;
+  name: string;
+  status: CaseStatus;
+  urgency: Urgency;
+  language: string;
+  reply: string;
+  call_1122: boolean;
+  held_slot: { starts_at: string; doctor: string } | null;
+  booked_slot: { starts_at: string; doctor: string } | null;
+  called_back: boolean;
+  location_shared: boolean;
+  trip: {
+    status: DispatchStatus;
+    responder: string;
+    vehicle: string;
+    hospital: string;
+    phase: "to_patient" | "waiting_at_patient" | "to_hospital" | "at_hospital" | "cancelled";
+    km_away: number;
+    eta_min: number;
+    mode: "live" | "simulated" | "no_signal" | "finished";
+  } | null;
+  created_at: string;
+}
+
 export interface Stats {
   pending: number;
   urgent_pending: number;
@@ -100,6 +131,50 @@ export interface Dispatch {
   note: string;
   created_at: string;
   updated_at: string;
+  tracking_link: string;
+}
+
+export interface Pt {
+  lat: number;
+  lng: number;
+}
+
+export interface Track {
+  dispatch_id: number;
+  status: DispatchStatus;
+  tier: "emergency" | "transport";
+  mode: "live" | "simulated" | "no_signal" | "finished";
+  phase: "to_patient" | "waiting_at_patient" | "to_hospital" | "at_hospital" | "cancelled";
+  responder: string;
+  vehicle: string;
+  hospital: string;
+  position: Pt;
+  patient: Pt;
+  hospital_position: Pt;
+  start: Pt;
+  km_to_patient: number;
+  km_to_hospital: number;
+  eta_patient_min: number;
+  eta_hospital_min: number;
+  progress: number;
+  trail: Pt[];
+  last_fix_seconds: number | null;
+  updated_at: string;
+}
+
+export interface ResponderTrip {
+  dispatch_id: number;
+  status: DispatchStatus;
+  tier: "emergency" | "transport";
+  responder: string;
+  patient: string;
+  patient_phone: string;
+  summary: string;
+  pickup: Pt;
+  pickup_label: string;
+  hospital: string;
+  hospital_position: Pt;
+  hospital_phone: string;
 }
 
 export interface Transport {
@@ -142,14 +217,39 @@ export interface ScheduleSlot {
   urgency: Urgency | null;
 }
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  status?: number;
+}
+
+// Staff access code for the clinic desk, kept on this device only.
+const STAFF_KEY = "sehat-staff-code";
+export const staffCode = {
+  get: () => {
+    try {
+      return localStorage.getItem(STAFF_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  },
+  set: (code: string) => {
+    try {
+      if (code) localStorage.setItem(STAFF_KEY, code);
+      else localStorage.removeItem(STAFF_KEY);
+    } catch {}
+  },
+};
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
+  const code = typeof window === "undefined" ? "" : staffCode.get();
   try {
     res = await fetch(`${API}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+      headers: {
+        "Content-Type": "application/json",
+        ...(code ? { "X-Staff-Key": code } : {}),
+        ...(init?.headers ?? {}),
+      },
       cache: "no-store",
     });
   } catch {
@@ -162,13 +262,17 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       if (typeof body.detail === "string") detail = body.detail;
       else if (Array.isArray(body.detail)) detail = body.detail.map((d: { msg: string }) => d.msg).join(", ");
     } catch {}
-    throw new ApiError(detail);
+    const err = new ApiError(detail);
+    err.status = res.status;
+    throw err;
   }
   return res.json() as Promise<T>;
 }
 
 export const api = {
-  health: () => call<{ ok: boolean; clinic: string; ai: string; whatsapp: boolean }>("/api/health"),
+  health: () =>
+    call<{ ok: boolean; clinic: string; ai: string; whatsapp: boolean; staff_code_required: boolean }>("/api/health"),
+  staffCheck: () => call<{ ok: boolean }>("/api/staff/check"),
   stats: () => call<Stats>("/api/stats"),
   cases: (status: CaseStatus | "all") => call<Case[]>(`/api/cases?status=${status}`),
   slots: (days = 3) => call<Slot[]>(`/api/slots?status=open&days=${days}`),
@@ -177,7 +281,13 @@ export const api = {
     call<{ id: number }>("/api/leads", { method: "POST", body: JSON.stringify(body) }),
   audit: (caseId: number) => call<AuditEvent[]>(`/api/audit?case_id=${caseId}`),
   intake: (phone: string, name: string, message: string) =>
-    call<Case>("/api/intake", { method: "POST", body: JSON.stringify({ phone, name, message, channel: "web" }) }),
+    call<IntakeResult>("/api/intake", { method: "POST", body: JSON.stringify({ phone, name, message, channel: "web" }) }),
+  patientStatus: (c: number, t: string) =>
+    call<PatientStatus>(`/api/patient/status?c=${c}&t=${encodeURIComponent(t)}`),
+  patientLocation: (c: number, t: string, lat: number, lng: number, label: string) =>
+    call<PatientStatus>("/api/patient/location", { method: "POST", body: JSON.stringify({ c, t, lat, lng, label }) }),
+  responderStatus: (d: number, token: string, status: "reached_patient" | "at_hospital") =>
+    call<Dispatch>(`/api/dispatches/${d}/responder-status`, { method: "POST", body: JSON.stringify({ token, status }) }),
   approve: (id: number, staff: string, slot_id: number | null, note: string) =>
     call<Case>(`/api/cases/${id}/approve`, { method: "POST", body: JSON.stringify({ staff, slot_id, note }) }),
   reject: (id: number, staff: string, note: string) =>
@@ -191,6 +301,15 @@ export const api = {
     call<Dispatch>(`/api/cases/${id}/dispatch`, {
       method: "POST",
       body: JSON.stringify({ staff, responder_id, hospital_id, note }),
+    }),
+  track: (dispatchId: number) => call<Track>(`/api/dispatches/${dispatchId}/track`),
+  responderTrack: (d: number, t: string) => call<Track>(`/api/responder-track?d=${d}&t=${encodeURIComponent(t)}`),
+  responderTrip: (d: number, t: string) =>
+    call<ResponderTrip>(`/api/responder-trip?d=${d}&t=${encodeURIComponent(t)}`),
+  postPosition: (d: number, token: string, lat: number, lng: number, accuracy_m: number | null) =>
+    call<Track>(`/api/dispatches/${d}/position`, {
+      method: "POST",
+      body: JSON.stringify({ token, lat, lng, accuracy_m }),
     }),
   dispatchStatus: (dispatchId: number, staff: string, status: Exclude<DispatchStatus, "dispatched">, note = "") =>
     call<Dispatch>(`/api/dispatches/${dispatchId}/status`, {

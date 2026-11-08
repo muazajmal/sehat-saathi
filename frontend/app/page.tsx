@@ -130,6 +130,9 @@ export default function Home() {
                 Try the clinic desk
               </Link>
             </div>
+            <p className="hero-patient">
+              Feeling unwell? <Link href="/patient">Tell a doctor what&apos;s wrong, in any language →</Link>
+            </p>
             <ul className="hero-ticks">
               <li>
                 <Check /> No app for patients

@@ -32,6 +32,11 @@ class Settings:
     whatsapp_verify_token: str = os.getenv("WHATSAPP_VERIFY_TOKEN", "sehat-saathi-verify")
     n8n_escalation_webhook: str = os.getenv("N8N_ESCALATION_WEBHOOK", "")
     n8n_dispatch_webhook: str = os.getenv("N8N_DISPATCH_WEBHOOK", "")
+    # Public website address, used to build the responder's tracking link.
+    frontend_url: str = os.getenv("FRONTEND_URL", "https://sehat-saathi-eta.vercel.app").rstrip("/")
+    # When set, the clinic desk and its data need this code (header X-Staff-Key).
+    # Leave empty only for demos with sample data.
+    staff_key: str = os.getenv("STAFF_KEY", "")
     clinic_name: str = os.getenv("CLINIC_NAME", "Shifa Family Clinic")
     cors_origins: list[str] = os.getenv(
         "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"

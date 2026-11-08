@@ -9,13 +9,15 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+import secrets
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import dispatch, services, transport
+from . import dispatch, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
 from .models import AuditEvent, Case, Dispatch, Lead, Patient, Responder, Slot
@@ -28,8 +30,14 @@ from .schemas import (
     DispatchOut,
     DispatchStatusIn,
     IntakeIn,
+    IntakeOut,
+    PatientLocationIn,
+    PatientStatusOut,
     LocationIn,
     LocationOut,
+    PositionIn,
+    ResponderTripOut,
+    TrackOut,
     ResponderOut,
     TransportOut,
     LeadIn,
@@ -85,6 +93,15 @@ app.add_middleware(
 URGENCY_ORDER = {"urgent": 0, "today": 1, "routine": 2}
 
 
+def staff_only(x_staff_key: str | None = Header(default=None)):
+    """The desk and patient data. Open only when STAFF_KEY is not set (demos with sample data)."""
+    if settings.staff_key and not (x_staff_key and secrets.compare_digest(x_staff_key, settings.staff_key)):
+        raise HTTPException(401, "Staff access code needed.")
+
+
+STAFF = [Depends(staff_only)]
+
+
 @app.get("/api/health")
 def health():
     return {
@@ -92,21 +109,46 @@ def health():
         "clinic": settings.clinic_name,
         "ai": settings.gemini_model if settings.gemini_api_key else "rules-only",
         "whatsapp": bool(settings.whatsapp_token),
+        "staff_code_required": bool(settings.staff_key),
     }
+
+
+@app.get("/api/staff/check", dependencies=STAFF)
+def staff_check():
+    """The desk calls this to know whether the saved access code still works."""
+    return {"ok": True}
 
 
 # ---------- Intake ----------
 
-@app.post("/api/intake", response_model=CaseOut, status_code=201)
+@app.post("/api/intake", response_model=IntakeOut, status_code=201)
 def intake(body: IntakeIn, db: Session = Depends(get_db)):
-    """A patient message from any channel (web demo, n8n, WhatsApp webhook)."""
+    """A patient message from any channel (patient website, demo, n8n). Public."""
     case = services.create_intake(db, body.phone.strip(), body.name.strip(), body.message.strip(), body.channel)
     if body.lat is not None and body.lng is not None:
         dispatch.set_location(db, case.id, body.lat, body.lng, body.location_label, "web")
-    return case
+    token = patient.issue_token(db, case.id)
+    db.refresh(case)
+    out = IntakeOut.model_validate(
+        {**CaseOut.model_validate(case).model_dump(), "access_token": token,
+         "status_link": patient.status_link(case.id, token)}
+    )
+    return out
 
 
-@app.post("/api/triage/preview")
+@app.get("/api/patient/status", response_model=PatientStatusOut)
+def patient_status(c: int, t: str, db: Session = Depends(get_db)):
+    """The patient's own case, through their private link: booking, reply, responder distance."""
+    return patient.status(db, c, t)
+
+
+@app.post("/api/patient/location", response_model=PatientStatusOut)
+def patient_location(body: PatientLocationIn, db: Session = Depends(get_db)):
+    patient.share_location(db, body.c, body.t, body.lat, body.lng, body.label)
+    return patient.status(db, body.c, body.t)
+
+
+@app.post("/api/triage/preview", dependencies=STAFF)
 def triage_preview(body: IntakeIn):
     """Triage without saving anything. Handy for testing prompts."""
     return {"final": triage(body.message).to_dict(), "rules_only": rules_triage(body.message).to_dict()}
@@ -114,7 +156,7 @@ def triage_preview(body: IntakeIn):
 
 # ---------- Cases ----------
 
-@app.get("/api/cases", response_model=list[CaseOut])
+@app.get("/api/cases", response_model=list[CaseOut], dependencies=STAFF)
 def list_cases(
     status: Literal["pending_review", "approved", "rejected", "all"] = "pending_review",
     limit: int = Query(100, le=500),
@@ -129,29 +171,29 @@ def list_cases(
     return cases
 
 
-@app.get("/api/cases/{case_id}", response_model=CaseOut)
+@app.get("/api/cases/{case_id}", response_model=CaseOut, dependencies=STAFF)
 def get_case(case_id: int, db: Session = Depends(get_db)):
     return services.get_case(db, case_id)
 
 
-@app.post("/api/cases/{case_id}/approve", response_model=CaseOut)
+@app.post("/api/cases/{case_id}/approve", response_model=CaseOut, dependencies=STAFF)
 def approve_case(case_id: int, body: ApproveIn, db: Session = Depends(get_db)):
     return services.approve(db, case_id, body.staff, body.slot_id, body.note)
 
 
-@app.post("/api/cases/{case_id}/reject", response_model=CaseOut)
+@app.post("/api/cases/{case_id}/reject", response_model=CaseOut, dependencies=STAFF)
 def reject_case(case_id: int, body: RejectIn, db: Session = Depends(get_db)):
     return services.reject(db, case_id, body.staff, body.note)
 
 
-@app.post("/api/cases/{case_id}/called", response_model=CaseOut)
+@app.post("/api/cases/{case_id}/called", response_model=CaseOut, dependencies=STAFF)
 def log_callback(case_id: int, body: CallbackIn, db: Session = Depends(get_db)):
     return services.mark_called(db, case_id, body.staff, body.note)
 
 
 # ---------- Slots ----------
 
-@app.get("/api/slots", response_model=list[SlotOut])
+@app.get("/api/slots", response_model=list[SlotOut], dependencies=STAFF)
 def list_slots(
     status: Literal["open", "held", "booked", "all"] = "open",
     days: int = Query(2, ge=1, le=14),
@@ -168,7 +210,7 @@ def list_slots(
     return list(db.scalars(q))
 
 
-@app.post("/api/slots", response_model=SlotOut, status_code=201)
+@app.post("/api/slots", response_model=SlotOut, status_code=201, dependencies=STAFF)
 def add_slot(body: SlotIn, db: Session = Depends(get_db)):
     slot = Slot(**body.model_dump(), status="open")
     slot.starts_at = slot.starts_at.replace(tzinfo=None)
@@ -177,7 +219,7 @@ def add_slot(body: SlotIn, db: Session = Depends(get_db)):
     return slot
 
 
-@app.get("/api/schedule", response_model=list[ScheduleSlot])
+@app.get("/api/schedule", response_model=list[ScheduleSlot], dependencies=STAFF)
 def schedule(day: date | None = None, db: Session = Depends(get_db)):
     """Every slot for one day, with the patient attached to held or booked ones."""
     d = day or services.now().date()
@@ -221,28 +263,63 @@ def schedule(day: date | None = None, db: Session = Depends(get_db)):
 
 # ---------- Getting patients to hospital ----------
 
-@app.post("/api/cases/{case_id}/location", response_model=LocationOut)
+@app.post("/api/cases/{case_id}/location", response_model=LocationOut, dependencies=STAFF)
 def share_location(case_id: int, body: LocationIn, db: Session = Depends(get_db)):
     return dispatch.set_location(db, case_id, body.lat, body.lng, body.label, body.source)
 
 
-@app.get("/api/cases/{case_id}/transport", response_model=TransportOut)
+@app.get("/api/cases/{case_id}/transport", response_model=TransportOut, dependencies=STAFF)
 def transport_options(case_id: int, db: Session = Depends(get_db)):
     """Suggested government hospital and nearest free responder. Staff decide."""
     return dispatch.options(db, case_id)
 
 
-@app.post("/api/cases/{case_id}/dispatch", response_model=DispatchOut, status_code=201)
+@app.post("/api/cases/{case_id}/dispatch", response_model=DispatchOut, status_code=201, dependencies=STAFF)
 def send_responder(case_id: int, body: DispatchIn, db: Session = Depends(get_db)):
     return dispatch.send(db, case_id, body.staff, body.responder_id, body.hospital_id, body.note)
 
 
-@app.post("/api/dispatches/{dispatch_id}/status", response_model=DispatchOut)
+@app.post("/api/dispatches/{dispatch_id}/status", response_model=DispatchOut, dependencies=STAFF)
 def dispatch_status(dispatch_id: int, body: DispatchStatusIn, db: Session = Depends(get_db)):
     return dispatch.update_status(db, dispatch_id, body.staff, body.status, body.note)
 
 
-@app.get("/api/responders", response_model=list[ResponderOut])
+@app.get("/api/dispatches/{dispatch_id}/track", response_model=TrackOut, dependencies=STAFF)
+def track_dispatch(dispatch_id: int, db: Session = Depends(get_db)):
+    """Where the responder is now, and how far from the patient and the hospital."""
+    return dispatch.track(db, dispatch_id)
+
+
+@app.post("/api/dispatches/{dispatch_id}/position", response_model=TrackOut)
+def post_position(dispatch_id: int, body: PositionIn, db: Session = Depends(get_db)):
+    """GPS fix from the responder's phone (private tracking link)."""
+    return dispatch.post_position(db, dispatch_id, body.token, body.lat, body.lng, body.accuracy_m)
+
+
+@app.post("/api/dispatches/{dispatch_id}/responder-status", response_model=DispatchOut)
+def responder_status(dispatch_id: int, body: dict, db: Session = Depends(get_db)):
+    """The responder marks progress from their phone, using their private link."""
+    d = dispatch._check_token(db, dispatch_id, str(body.get("token", "")))
+    status = body.get("status")
+    if status not in ("reached_patient", "at_hospital"):
+        raise HTTPException(422, "status must be reached_patient or at_hospital")
+    return dispatch.update_status(db, d.id, d.responder.name, status, "From the responder's phone")
+
+
+@app.get("/api/responder-track", response_model=TrackOut)
+def responder_track(d: int, t: str, db: Session = Depends(get_db)):
+    """Distance and progress for the responder's own phone (private link)."""
+    dispatch._check_token(db, d, t)
+    return dispatch.track(db, d)
+
+
+@app.get("/api/responder-trip", response_model=ResponderTripOut)
+def responder_trip(d: int, t: str, db: Session = Depends(get_db)):
+    """What the responder's phone shows: who to pick up, where, and which hospital."""
+    return dispatch.responder_trip(db, d, t)
+
+
+@app.get("/api/responders", response_model=list[ResponderOut], dependencies=STAFF)
 def responders(db: Session = Depends(get_db)):
     return list(db.scalars(select(Responder).order_by(Responder.id)))
 
@@ -274,7 +351,7 @@ def create_lead(body: LeadIn, db: Session = Depends(get_db)):
 
 # ---------- Dashboard ----------
 
-@app.get("/api/stats", response_model=StatsOut)
+@app.get("/api/stats", response_model=StatsOut, dependencies=STAFF)
 def stats(db: Session = Depends(get_db)):
     t = services.now()
     day_start = t.replace(hour=0, minute=0, second=0)
@@ -316,7 +393,7 @@ def stats(db: Session = Depends(get_db)):
     )
 
 
-@app.get("/api/audit", response_model=list[AuditOut])
+@app.get("/api/audit", response_model=list[AuditOut], dependencies=STAFF)
 def audit_log(case_id: int | None = None, limit: int = Query(50, le=500), db: Session = Depends(get_db)):
     q = select(AuditEvent).order_by(AuditEvent.at.desc(), AuditEvent.id.desc()).limit(limit)
     if case_id is not None:

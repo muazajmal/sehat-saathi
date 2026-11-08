@@ -142,3 +142,36 @@ class Dispatch(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime)
 
     responder: Mapped[Responder] = relationship()
+
+
+class DispatchAccess(Base):
+    """Private link for the responder's phone. Only someone with the token can post positions."""
+
+    __tablename__ = "dispatch_access"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    dispatch_id: Mapped[int] = mapped_column(ForeignKey("dispatches.id"), unique=True, index=True)
+    token: Mapped[str] = mapped_column(String(64))
+
+
+class TrackPoint(Base):
+    """A GPS position from the responder's phone during a trip."""
+
+    __tablename__ = "track_points"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    dispatch_id: Mapped[int] = mapped_column(ForeignKey("dispatches.id"), index=True)
+    lat: Mapped[float] = mapped_column()
+    lng: Mapped[float] = mapped_column()
+    accuracy_m: Mapped[float | None] = mapped_column(nullable=True)
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class CaseAccess(Base):
+    """Private status link for the patient. Only someone with the token sees their own case."""
+
+    __tablename__ = "case_access"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), unique=True, index=True)
+    token: Mapped[str] = mapped_column(String(64))

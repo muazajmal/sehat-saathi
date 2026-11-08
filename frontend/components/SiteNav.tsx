@@ -33,11 +33,17 @@ export default function SiteNav() {
               {l.label}
             </a>
           ))}
+          <Link href="/patient" className="nav-mobile-only" onClick={() => setOpen(false)}>
+            I&apos;m a patient: get help
+          </Link>
           <Link href="/desk" className="nav-mobile-only" onClick={() => setOpen(false)}>
             Clinic desk
           </Link>
         </nav>
         <div className="nav-cta">
+          <Link href="/patient" className="nav-signin nav-patient">
+            Get help
+          </Link>
           <Link href="/desk" className="nav-signin">
             Clinic desk
           </Link>

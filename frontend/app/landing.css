@@ -1400,3 +1400,20 @@
     padding: 22px;
   }
 }
+
+.hero-patient {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.hero-patient a {
+  color: var(--mint);
+  font-weight: 600;
+  text-decoration: none;
+}
+.hero-patient a:hover {
+  text-decoration: underline;
+}
+.nav-patient {
+  color: var(--mint) !important;
+}

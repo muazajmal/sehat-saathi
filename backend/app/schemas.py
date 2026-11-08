@@ -192,6 +192,7 @@ class DispatchOut(BaseModel):
     note: str
     created_at: datetime
     updated_at: datetime
+    tracking_link: str = ""
 
 
 class TransportOut(BaseModel):
@@ -217,3 +218,102 @@ class DispatchStatusIn(BaseModel):
     staff: str = Field(min_length=2, max_length=120)
     status: Literal["reached_patient", "at_hospital", "cancelled"]
     note: str = Field(default="", max_length=1000)
+
+
+class PositionIn(BaseModel):
+    token: str = Field(min_length=8, max_length=64)
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0, le=100000)
+
+
+class TrackPointOut(BaseModel):
+    lat: float
+    lng: float
+
+
+class TrackOut(BaseModel):
+    dispatch_id: int
+    status: str
+    tier: str
+    mode: Literal["live", "simulated", "no_signal", "finished"]
+    phase: Literal["to_patient", "waiting_at_patient", "to_hospital", "at_hospital", "cancelled"]
+    responder: str
+    vehicle: str
+    hospital: str
+    position: TrackPointOut
+    patient: TrackPointOut
+    hospital_position: TrackPointOut
+    start: TrackPointOut
+    km_to_patient: float
+    km_to_hospital: float
+    eta_patient_min: int
+    eta_hospital_min: int
+    progress: float  # 0..1 along responder -> patient -> hospital
+    trail: list[TrackPointOut]
+    last_fix_seconds: int | None  # how old the latest GPS fix is
+    updated_at: datetime
+
+
+class ResponderTripOut(BaseModel):
+    dispatch_id: int
+    status: str
+    tier: str
+    responder: str
+    patient: str
+    patient_phone: str
+    summary: str
+    pickup: TrackPointOut
+    pickup_label: str
+    hospital: str
+    hospital_position: TrackPointOut
+    hospital_phone: str
+
+
+# ---------- Patient-facing ----------
+
+class IntakeOut(CaseOut):
+    """What the patient (or the website demo) gets back: their case plus a private status link."""
+    access_token: str
+    status_link: str
+
+
+class PatientLocationIn(BaseModel):
+    c: int
+    t: str = Field(min_length=8, max_length=64)
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+    label: str = Field(default="", max_length=200)
+
+
+class PatientSlot(BaseModel):
+    starts_at: datetime
+    doctor: str
+
+
+class PatientTrip(BaseModel):
+    status: str
+    responder: str
+    vehicle: str
+    hospital: str
+    phase: str
+    km_away: float
+    eta_min: int
+    mode: str
+
+
+class PatientStatusOut(BaseModel):
+    case_id: int
+    clinic: str
+    name: str
+    status: Literal["pending_review", "approved", "rejected"]
+    urgency: str
+    language: str
+    reply: str
+    call_1122: bool
+    held_slot: PatientSlot | None
+    booked_slot: PatientSlot | None
+    called_back: bool
+    location_shared: bool
+    trip: PatientTrip | None
+    created_at: datetime

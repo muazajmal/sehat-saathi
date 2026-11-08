@@ -9,8 +9,11 @@ import {
   mapLink,
   SAMPLE_LOCATION,
   type DispatchStatus,
+  type Track,
   type Transport,
 } from "../lib/api";
+
+const firstName = (name: string) => name.match(/\(([^)]+)\)$/)?.[1] ?? name;
 
 const STEPS: { id: DispatchStatus; label: string }[] = [
   { id: "dispatched", label: "On the way" },
@@ -27,17 +30,19 @@ function MiniMap({
   hospitalId,
   responders,
   responderId,
+  track,
 }: {
   patient: Pt;
   hospitals: (Pt & { id: string; short: string })[];
   hospitalId: string | null;
   responders: (Pt & { id: number; name: string })[];
   responderId: number | null;
+  track?: Track | null;
 }) {
   const W = 560;
   const H = 220;
   const pad = 34;
-  const all = [patient, ...hospitals, ...responders];
+  const all = [patient, ...hospitals, ...responders, ...(track ? [track.start, track.position, ...track.trail] : [])];
   const minLat = Math.min(...all.map((p) => p.lat));
   const maxLat = Math.max(...all.map((p) => p.lat));
   const minLng = Math.min(...all.map((p) => p.lng));
@@ -65,8 +70,27 @@ function MiniMap({
         </pattern>
       </defs>
       <rect width={W} height={H} fill="url(#mm-grid)" />
-      {R1 && <line x1={R1.x} y1={R1.y} x2={P.x} y2={P.y} className="mm-route" />}
-      {H1 && <line x1={P.x} y1={P.y} x2={H1.x} y2={H1.y} className="mm-route to-hospital" />}
+      {track ? (
+        <>
+          {track.trail.length > 1 && (
+            <polyline
+              className="mm-trail"
+              points={track.trail.map((p) => { const q = xy(p); return `${q.x},${q.y}`; }).join(" ")}
+            />
+          )}
+          {(track.phase === "to_patient") && (() => { const C = xy(track.position); return (
+            <line x1={C.x} y1={C.y} x2={P.x} y2={P.y} className="mm-route" />); })()}
+          {H1 && track.phase !== "at_hospital" && track.phase !== "cancelled" && (() => {
+            const from = track.phase === "to_hospital" ? xy(track.position) : P;
+            return <line x1={from.x} y1={from.y} x2={H1.x} y2={H1.y} className="mm-route to-hospital" />;
+          })()}
+        </>
+      ) : (
+        <>
+          {R1 && <line x1={R1.x} y1={R1.y} x2={P.x} y2={P.y} className="mm-route" />}
+          {H1 && <line x1={P.x} y1={P.y} x2={H1.x} y2={H1.y} className="mm-route to-hospital" />}
+        </>
+      )}
       {hospitals.map((h) => {
         const p = xy(h);
         const on = h.id === hospitalId;
@@ -79,7 +103,7 @@ function MiniMap({
           </g>
         );
       })}
-      {responders.map((r) => {
+      {!track && responders.map((r) => {
         const p = xy(r);
         const on = r.id === responderId;
         return (
@@ -89,6 +113,16 @@ function MiniMap({
           </g>
         );
       })}
+      {track && (() => {
+        const C = xy(track.position);
+        return (
+          <g className="mm-vehicle">
+            <circle cx={C.x} cy={C.y} r="13" className="mm-pulse" />
+            <circle cx={C.x} cy={C.y} r="7" />
+            <text x={C.x + 12} y={C.y - 10}>{label(firstName(track.responder))}</text>
+          </g>
+        );
+      })()}
       <g className="mm-patient">
         <circle cx={P.x} cy={P.y} r="14" className="mm-pulse" />
         <circle cx={P.x} cy={P.y} r="6" />
@@ -112,6 +146,8 @@ export default function TransportPanel({
   const [responderId, setResponderId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [track, setTrack] = useState<Track | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -130,6 +166,29 @@ export default function TransportPanel({
     const timer = setInterval(load, 6000); // pick up a location the patient shares while staff are looking
     return () => clearInterval(timer);
   }, [load]);
+
+  const dispatchId = t?.dispatch?.id;
+  const tripLive = t?.dispatch && t.dispatch.status !== "cancelled";
+  const tripActive = t?.dispatch && (t.dispatch.status === "dispatched" || t.dispatch.status === "reached_patient");
+  useEffect(() => {
+    if (!dispatchId || !tripLive) {
+      setTrack(null);
+      return;
+    }
+    let stop = false;
+    const tick = () =>
+      api
+        .track(dispatchId)
+        .then((x) => !stop && setTrack(x))
+        .catch(() => {});
+    tick();
+    if (!tripActive) return () => void (stop = true);
+    const timer = setInterval(tick, 3000);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+  }, [dispatchId, tripLive, tripActive, t?.dispatch?.status]);
 
   async function act(fn: () => Promise<unknown>, msg: string) {
     if (!staff.trim()) {
@@ -213,6 +272,7 @@ export default function TransportPanel({
             hospitalId={d ? d.hospital_id : hospitalId}
             responders={d ? [d.responder] : t.responders.slice(0, 3)}
             responderId={d ? d.responder.id : responderId}
+            track={d && d.status !== "cancelled" ? track : null}
           />
 
           {d && (
@@ -228,14 +288,13 @@ export default function TransportPanel({
                   );
                 })}
               </ol>
+              {track && d.status !== "cancelled" && (
+                <LiveTracker track={track} />
+              )}
               <p>
                 <b>{d.responder.name}</b> ({d.responder.vehicle}) →{" "}
                 <b>{d.hospital_name}</b>
-                {d.status === "cancelled"
-                  ? " · cancelled"
-                  : d.status === "dispatched"
-                    ? ` · about ${d.eta_minutes} min to the patient`
-                    : ""}
+                {d.status === "cancelled" ? " · cancelled" : ""}
               </p>
               <p className="muted">
                 Sent by {d.approved_by}, {ago(d.created_at)}
@@ -279,6 +338,32 @@ export default function TransportPanel({
                   >
                     Cancel
                   </button>
+                </div>
+              )}
+              {active && d.tracking_link && (
+                <div className="share-link">
+                  <span>
+                    Responder&apos;s tracking link: open it on their phone to share live location.
+                  </span>
+                  <div>
+                    <button
+                      className="btn btn-quiet"
+                      onClick={() => {
+                        navigator.clipboard
+                          ?.writeText(d.tracking_link)
+                          .then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          })
+                          .catch(() => {});
+                      }}
+                    >
+                      {copied ? "Copied" : "Copy link"}
+                    </button>
+                    <a className="btn btn-quiet" href={d.tracking_link} target="_blank" rel="noreferrer">
+                      Open
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
@@ -353,4 +438,57 @@ export default function TransportPanel({
       )}
     </div>
   );
+}
+
+function LiveTracker({ track }: { track: Track }) {
+  const who = firstName(track.responder);
+  const hospital = track.hospital.replace(/^Ch\. Pervaiz Elahi /, "");
+  const headline =
+    track.phase === "to_patient"
+      ? `${who} is ${track.km_to_patient.toFixed(1)} km from the patient, about ${Math.max(1, track.eta_patient_min)} min away`
+      : track.phase === "waiting_at_patient"
+        ? `${who} has reached the patient`
+        : track.phase === "to_hospital"
+          ? `Patient on the way: ${track.km_to_hospital.toFixed(1)} km from ${hospital}, arriving in about ${Math.max(1, track.eta_hospital_min)} min`
+          : `Patient has arrived at ${hospital}`;
+  const sub =
+    track.phase === "to_patient" || track.phase === "waiting_at_patient"
+      ? `Then ${track.km_to_hospital.toFixed(1)} km to ${hospital} (about ${track.eta_hospital_min} min in total)`
+      : null;
+  const badge =
+    track.mode === "live"
+      ? { cls: "live", text: `Live GPS · updated ${track.last_fix_seconds ?? 0}s ago` }
+      : track.mode === "simulated"
+        ? { cls: "sim", text: "Demo simulation (sped up)" }
+        : track.mode === "no_signal"
+          ? { cls: "wait", text: "Waiting for the responder's phone. Send them the tracking link." }
+          : null;
+  // Patient pickup sits part-way along the bar, in proportion to the two legs.
+  const leg1 = Math.max(0.05, Math.min(0.95, pickupShare(track)));
+  return (
+    <div className={`tracker phase-${track.phase}`} aria-live="polite">
+      <p className="tracker-head">{headline}</p>
+      {sub && <p className="muted tracker-sub">{sub}</p>}
+      <div className="tracker-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(track.progress * 100)}>
+        <span className="fill" style={{ width: `${track.progress * 100}%` }} />
+        <span className="stop start" style={{ left: "0%" }} title="Responder" />
+        <span className="stop pickup" style={{ left: `${leg1 * 100}%` }} title="Patient" />
+        <span className="stop end" style={{ left: "100%" }} title="Hospital" />
+        <span className="vehicle" style={{ left: `${track.progress * 100}%` }} />
+      </div>
+      <div className="tracker-labels">
+        <span>{leg1 < 0.18 ? "Responder · Patient" : "Responder"}</span>
+        {leg1 >= 0.18 && leg1 <= 0.82 && <span style={{ left: `${leg1 * 100}%` }}>Patient</span>}
+        <span>{leg1 > 0.82 ? "Patient · Hospital" : "Hospital"}</span>
+      </div>
+      {badge && <span className={`track-badge ${badge.cls}`}>{badge.text}</span>}
+    </div>
+  );
+}
+
+function pickupShare(t: Track) {
+  const d = (a: Pt, b: Pt) => Math.hypot(a.lat - b.lat, (a.lng - b.lng) * Math.cos((a.lat * Math.PI) / 180));
+  const l1 = d(t.start, t.patient);
+  const l2 = d(t.patient, t.hospital_position);
+  return l1 + l2 > 0 ? l1 / (l1 + l2) : 0.5;
 }
