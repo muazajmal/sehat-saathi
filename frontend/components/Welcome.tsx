@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadLang, saveLang, type UiLang } from "../lib/patientText";
 import { useSession } from "../lib/useSession";
+import InstallApp from "./InstallApp";
 import { LogoMark } from "./Logo";
 import { useEffect, useState } from "react";
 
@@ -115,6 +116,10 @@ export default function Welcome() {
           </>
         )}
       </section>
+
+      <div className="patient welcome-install">
+        <InstallApp lang={lang} />
+      </div>
 
       <p className="welcome-foot">{t.foot}</p>
     </main>

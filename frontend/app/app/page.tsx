@@ -1,3 +1,4 @@
+import "../patient.css";
 import Welcome from "../../components/Welcome";
 
 export const metadata = {
