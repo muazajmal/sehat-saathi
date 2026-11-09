@@ -16,6 +16,7 @@ export interface AidGuide {
 
 export const GUIDES = data.cards as AidGuide[];
 export const REVIEWED_BY: string = data.reviewed_by;
+export const REVIEWED_BY_UR: string = (data as { reviewed_by_ur?: string }).reviewed_by_ur || data.reviewed_by;
 export const SOURCE = data.source;
 export const guide = (key: string) => GUIDES.find((g) => g.key === key);
 

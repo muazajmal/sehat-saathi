@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AT, REVIEWED_BY, SOURCE, guide as findGuide, type AidGuide } from "../lib/firstAid";
+import { AT, REVIEWED_BY, REVIEWED_BY_UR, SOURCE, guide as findGuide, type AidGuide } from "../lib/firstAid";
 import type { UiLang } from "../lib/patientText";
 
 const STEP_MS = 6500; // when the phone has no voice for this language
@@ -145,7 +145,7 @@ export default function FirstAidPlayer({ guide, lang, onOpen }: { guide: AidGuid
         <a href={guide.source_url ?? SOURCE.url} target="_blank" rel="noreferrer">
           {t.basedOn(SOURCE.name)}
         </a>
-        {REVIEWED_BY ? ` · ✓ ${t.checkedBy(REVIEWED_BY)}` : ""}
+        {REVIEWED_BY ? ` · ✓ ${t.checkedBy(lang === "ur" ? REVIEWED_BY_UR : REVIEWED_BY)}` : ""}
       </p>
     </div>
   );

@@ -1,7 +1,7 @@
 """Which first-aid guides to show a patient while help is on the way.
 
 Only for danger signs where bystander first aid is standard. The content itself lives in
-frontend/lib/firstAid.json (St John Ambulance guidance, reviewed by a doctor).
+frontend/lib/firstAid.json (St John Ambulance guidance, checked and signed off by Dr. Sheryar on 9 Nov 2026).
 """
 import re
 
