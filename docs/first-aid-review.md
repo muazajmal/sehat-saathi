@@ -1,4 +1,4 @@
-# First-aid steps: review sheet for Dr. Ajmal
+# First-aid steps: review sheet for Dr. Sheryar
 
 Sehat Saathi shows these steps to patients and family members **while waiting for 1122 or a Sehat Saathi responder**.
 They are based on St John Ambulance guidance (https://www.sja.org.uk/first-aid-advice/).
@@ -6,7 +6,7 @@ They are based on St John Ambulance guidance (https://www.sja.org.uk/first-aid-a
 **Please check each step.** Tick it if it's right, or write the correction next to it.
 Things to decide: should the chest-pain guide say to chew an aspirin (and which dose), or keep "only if 1122 or a doctor tells you to"?
 
-After your approval the app shows "✓ Checked by Dr. Ajmal" on every guide.
+After your approval the app shows "✓ Checked by Dr. Sheryar" on every guide.
 
 ## Chest pain / heart attack · سینے میں درد / دل کا دورہ
 
