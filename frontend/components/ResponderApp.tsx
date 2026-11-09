@@ -1,5 +1,6 @@
 "use client";
 
+import TripMap from "./TripMap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, ApiError, directionsLink, type ResponderTrip, type Track } from "../lib/api";
@@ -36,6 +37,15 @@ export default function ResponderApp() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Keep the map and distances fresh while the trip is on.
+  useEffect(() => {
+    if (!d || !token) return;
+    const id = setInterval(() => {
+      api.responderTrack(d, token).then(setTrack).catch(() => {});
+    }, 5000);
+    return () => clearInterval(id);
+  }, [d, token]);
 
   const stop = useCallback(() => {
     if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
@@ -115,6 +125,18 @@ export default function ResponderApp() {
           <b>Emergency.</b> The family has been told to call 1122. If 1122 is already there, follow their crew.
           <a className="btn btn-danger" href="tel:1122">Call 1122</a>
         </div>
+      )}
+
+      {track && !ended && (
+        <TripMap
+          start={track.start}
+          patient={track.patient}
+          hospital={track.hospital_position}
+          position={track.position}
+          phase={track.phase}
+          hospitalName={track.hospital}
+          youLabel="Patient"
+        />
       )}
 
       <section className="r-card">

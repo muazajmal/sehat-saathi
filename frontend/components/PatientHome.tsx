@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError, type MyCase } from "../lib/api";
+import { cx, type InboxItem } from "../lib/community";
 import { T } from "../lib/patientText";
 import { useSession } from "../lib/useSession";
 import { EmergencyBar, PatientHeader, useClinicName, usePatientLang } from "./PatientPortal";
@@ -43,6 +44,7 @@ export default function PatientHome() {
   const { session, ready, logout } = useSession();
   const [items, setItems] = useState<MyCase[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
   const t = T[lang];
   const h = H[lang];
 
@@ -52,6 +54,7 @@ export default function PatientHome() {
       router.replace("/login");
       return;
     }
+    cx.inbox().then(setInbox).catch(() => {});
     api
       .myCases()
       .then(setItems)
@@ -78,6 +81,32 @@ export default function PatientHome() {
           {h.newReq}
         </Link>
       </section>
+
+      <nav className="tiles" aria-label="Sehat Saathi">
+        <Link href="/patient/medicines"><span aria-hidden>💊</span>{lang === "ur" ? "میری دوائیں" : "My medicines"}</Link>
+        <Link href="/patient/family"><span aria-hidden>👵</span>{lang === "ur" ? "گھر والوں کی خیریت" : "Family check-ins"}</Link>
+        <Link href="/donate"><span aria-hidden>🩸</span>{lang === "ur" ? "خون کا عطیہ" : "Donate blood"}</Link>
+        <Link href="/alerts"><span aria-hidden>📢</span>{lang === "ur" ? "علاقے کے الرٹس" : "Area alerts"}</Link>
+        <Link href="/first-aid"><span aria-hidden>🩺</span>{lang === "ur" ? "ابتدائی طبی امداد" : "First aid"}</Link>
+        <Link href="/patient"><span aria-hidden>➕</span>{lang === "ur" ? "نئی درخواست" : "New request"}</Link>
+      </nav>
+
+      {inbox.length > 0 && (
+        <section className="p-card">
+          <h2>{lang === "ur" ? "پیغامات" : "Messages"} {inbox.some((n) => !n.read) && <span className="dot-new" aria-label="new" />}</h2>
+          <ul className="inbox">
+            {inbox.slice(0, 6).map((n) => (
+              <li key={n.id} className={n.read ? "" : "unread"}>
+                <Link href={n.link || "#"} onClick={() => cx.inboxRead().catch(() => {})}>
+                  <b dir="auto">{n.title}</b>
+                  {n.body && <span dir="auto">{n.body}</span>}
+                  <small>{when(n.created_at)}</small>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="p-card">
         <h2>{t.previous}</h2>

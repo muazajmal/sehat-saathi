@@ -19,6 +19,7 @@ import { EmergencyBar, PatientHeader, useClinicName, usePatientLang } from "./Pa
 import InstallApp from "./InstallApp";
 import ReadAloud from "./ReadAloud";
 import FirstAidSheet from "./FirstAidSheet";
+import TripMap from "./TripMap";
 
 export default function PatientStatusView() {
   const params = useSearchParams();
@@ -126,6 +127,17 @@ export default function PatientStatusView() {
               </h2>
               {(trip.phase === "to_patient" || trip.phase === "to_hospital") && (
                 <p className="p-big">{t.away(trip.km_away.toFixed(1), Math.max(1, trip.eta_min))}</p>
+              )}
+              {trip.position && trip.start && trip.patient && trip.hospital_position && (
+                <TripMap
+                  start={trip.start}
+                  patient={trip.patient}
+                  hospital={trip.hospital_position}
+                  position={trip.position}
+                  phase={trip.phase}
+                  hospitalName={trip.hospital}
+                  youLabel={lang === "ur" ? "آپ" : "You"}
+                />
               )}
               <p className="p-muted">
                 {trip.vehicle}

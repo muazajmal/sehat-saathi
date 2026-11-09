@@ -1,0 +1,17 @@
+# Sends due medicine reminders and elder check-in reminders/alerts every 15 minutes.
+# Free on public repositories. GitHub may delay scheduled runs by a few minutes.
+name: Reminders
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send what has fallen due
+        env:
+          CRON_KEY: ${{ secrets.CRON_KEY }}
+        run: |
+          curl -fsS -m 60 -X POST -H "X-Cron-Key: ${CRON_KEY}" https://sehat-saathi-api.vercel.app/api/cron/tick

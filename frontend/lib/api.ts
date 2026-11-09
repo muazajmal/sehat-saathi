@@ -64,6 +64,11 @@ export interface PatientStatus {
     km_away: number;
     eta_min: number;
     mode: "live" | "simulated" | "no_signal" | "finished";
+    position?: Pt | null;
+    start?: Pt | null;
+    patient?: Pt | null;
+    hospital_position?: Pt | null;
+    progress?: number;
   } | null;
   charges: { id: number; kind: string; description: string; amount_pkr: number; status: "due" | "paid" | "waived"; method: PayMethod | null }[];
   first_aid: string[];
@@ -555,3 +560,6 @@ export function scriptClass(text: string, language?: string) {
   // Language unknown: Pashto, Sindhi and Arabic letters, or no Urdu-only letters, mean Naskh.
   return /[ټډړښږځڅېۍګڼڪٽٺٿڊڌڍڏڙڱڻڦڇڃڀةىي]/.test(text) || !/[ٹڈڑںھے]/.test(text) ? "naskh" : "urdu";
 }
+
+/** Shared request helper for feature modules (lib/community.ts). */
+export const apiCall = call;

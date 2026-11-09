@@ -1,6 +1,6 @@
 // Sehat Saathi web app: opens fast and still shows something on a weak connection.
 // Pages: network first, last copy if offline. App files: cache first. The API is never cached.
-const CACHE = "sehat-v1";
+const CACHE = "sehat-v2";
 const START = ["/patient", "/icons/icon-192.png"];
 
 const OFFLINE = `<!doctype html><html lang="ur" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -55,4 +55,39 @@ self.addEventListener("fetch", (e) => {
       ),
     );
   }
+});
+
+// Phone notifications (medicine reminders, elder check-ins, blood requests, area alerts).
+self.addEventListener("push", (e) => {
+  let d = {};
+  try {
+    d = e.data ? e.data.json() : {};
+  } catch {
+    d = { title: "Sehat Saathi", body: e.data ? e.data.text() : "" };
+  }
+  e.waitUntil(
+    self.registration.showNotification(d.title || "Sehat Saathi", {
+      body: d.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { link: d.link || "/app" },
+      vibrate: [120, 60, 120],
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const link = (e.notification.data && e.notification.data.link) || "/app";
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ("focus" in c) {
+          c.navigate(link);
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(link);
+    }),
+  );
 });

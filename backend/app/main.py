@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import accounts, auth, billing, dispatch, members, patient, services, transport
+from . import accounts, auth, community, billing, dispatch, members, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
 from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
@@ -72,6 +72,8 @@ def _init_db():
 
     with SessionLocal() as db:
         accounts.ensure_accounts(db)
+        if os.getenv("SEED_DEMO", "1") == "1":
+            community.seed_community(db)
 
 
 @asynccontextmanager
@@ -96,6 +98,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(accounts.router)
+app.include_router(community.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

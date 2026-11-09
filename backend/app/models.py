@@ -243,3 +243,167 @@ class Account(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+# ---------- Community features: notifications, area alerts, blood donors, medicines, elder check-ins ----------
+
+
+class Notification(Base):
+    """In-app inbox message (also pushed to the phone and to the n8n hook when set up)."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    phone: Mapped[str] = mapped_column(String(32), index=True)
+    kind: Mapped[str] = mapped_column(String(24))  # alert | blood | medicine | elder | booking
+    title: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(Text, default="")
+    link: Mapped[str] = mapped_column(String(400), default="")
+    dedupe: Mapped[str | None] = mapped_column(String(120), unique=True, nullable=True)
+    read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class PushSub(Base):
+    """A phone that agreed to notifications. Owner is a phone number (patient, donor, family) or an elder."""
+
+    __tablename__ = "push_subs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner: Mapped[str] = mapped_column(String(48), index=True)  # "phone:+92..." or "elder:12"
+    endpoint: Mapped[str] = mapped_column(String(600), unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class SampleSignal(Base):
+    """Past cases used only to demo area alerts (never shown on the desk)."""
+
+    __tablename__ = "sample_signals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    area: Mapped[str] = mapped_column(String(60), index=True)
+    group: Mapped[str] = mapped_column(String(24))
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class AreaAlert(Base):
+    __tablename__ = "area_alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    area: Mapped[str] = mapped_column(String(60), index=True)
+    group: Mapped[str] = mapped_column(String(24))
+    level: Mapped[str] = mapped_column(String(12), default="watch")  # watch | alert
+    cases_week: Mapped[int] = mapped_column(Integer, default=0)
+    baseline_week: Mapped[float] = mapped_column(default=0.0)
+    title_en: Mapped[str] = mapped_column(String(200), default="")
+    body_en: Mapped[str] = mapped_column(Text, default="")
+    title_ur: Mapped[str] = mapped_column(String(200), default="")
+    body_ur: Mapped[str] = mapped_column(Text, default="")
+    drafted_by: Mapped[str] = mapped_column(String(40), default="template")  # template | gemini model
+    status: Mapped[str] = mapped_column(String(12), default="draft", index=True)  # draft | published | closed
+    approved_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class Donor(Base):
+    __tablename__ = "donors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    blood_group: Mapped[str] = mapped_column(String(4), index=True)
+    area: Mapped[str] = mapped_column(String(60), default="")
+    lat: Mapped[float | None] = mapped_column(nullable=True)
+    lng: Mapped[float | None] = mapped_column(nullable=True)
+    last_donated: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    available: Mapped[bool] = mapped_column(Boolean, default=True)
+    token: Mapped[str] = mapped_column(String(64), index=True)
+    is_sample: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class BloodRequest(Base):
+    __tablename__ = "blood_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int | None] = mapped_column(ForeignKey("cases.id"), nullable=True)
+    blood_group: Mapped[str] = mapped_column(String(4))
+    units: Mapped[int] = mapped_column(Integer, default=1)
+    hospital: Mapped[str] = mapped_column(String(160))
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(12), default="open")  # open | filled | closed
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class BloodAsk(Base):
+    __tablename__ = "blood_asks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("blood_requests.id"), index=True)
+    donor_id: Mapped[int] = mapped_column(ForeignKey("donors.id"))
+    answer: Mapped[str] = mapped_column(String(12), default="waiting")  # waiting | yes | no | donated
+    km: Mapped[float | None] = mapped_column(nullable=True)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    donor: Mapped["Donor"] = relationship()
+
+
+class Medicine(Base):
+    """A medicine from the patient's own prescription. Doses are as the doctor wrote them."""
+
+    __tablename__ = "medicines"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    dose: Mapped[str] = mapped_column(String(160), default="")
+    times: Mapped[list] = mapped_column(JSON, default=list)  # ["08:00", "21:00"]
+    with_food: Mapped[str] = mapped_column(String(12), default="any")  # before | after | any
+    instructions_ur: Mapped[str] = mapped_column(Text, default="")
+    instructions_en: Mapped[str] = mapped_column(Text, default="")
+    start_date: Mapped[datetime] = mapped_column(DateTime)
+    days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source: Mapped[str] = mapped_column(String(12), default="manual")  # photo | manual
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class DoseLog(Base):
+    __tablename__ = "dose_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    medicine_id: Mapped[int] = mapped_column(ForeignKey("medicines.id"), index=True)
+    day: Mapped[str] = mapped_column(String(10))  # YYYY-MM-DD
+    time: Mapped[str] = mapped_column(String(5))  # HH:MM
+    taken_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class Elder(Base):
+    """An older person living alone, added by a family member, who checks in once a day."""
+
+    __tablename__ = "elders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    family_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    phone: Mapped[str] = mapped_column(String(32), default="")
+    checkin_time: Mapped[str] = mapped_column(String(5), default="09:00")
+    grace_min: Mapped[int] = mapped_column(Integer, default=120)
+    lang: Mapped[str] = mapped_column(String(4), default="ur")
+    token: Mapped[str] = mapped_column(String(64), index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class Checkin(Base):
+    __tablename__ = "checkins"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    elder_id: Mapped[int] = mapped_column(ForeignKey("elders.id"), index=True)
+    day: Mapped[str] = mapped_column(String(10), index=True)
+    status: Mapped[str] = mapped_column(String(8))  # ok | help
+    at: Mapped[datetime] = mapped_column(DateTime)

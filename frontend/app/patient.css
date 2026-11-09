@@ -860,3 +860,117 @@
     margin-left: max(16px, calc(50vw - 280px - 220px));
   }
 }
+
+/* Live trip map */
+.trip-map {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 16px;
+  margin: 8px 0 4px;
+  border: 1px solid var(--line-strong);
+}
+.trip-map .tm-amb {
+  transition: transform 4.8s linear;
+}
+.trip-map .tm-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tm-pulse 1.6s ease-out infinite;
+}
+@keyframes tm-pulse {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trip-map .tm-amb {
+    transition: none;
+  }
+  .trip-map .tm-pulse {
+    animation: none;
+  }
+}
+
+/* ===== Community features ===== */
+.patient .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.patient .chips button {
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink); border-radius: 999px;
+  padding: 9px 14px; font: inherit; font-size: 0.9375rem; cursor: pointer; min-height: 42px;
+}
+.patient .chips button[aria-pressed="true"] { background: var(--teal-soft); border-color: var(--mint); font-weight: 600; }
+.patient .chips.groups button { min-width: 58px; font-weight: 700; }
+.patient .p-select {
+  width: 100%; padding: 12px 14px; margin-bottom: 12px; border-radius: 12px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink); font: inherit;
+}
+.patient .urdu { font-family: var(--urdu), var(--sans); line-height: 2; }
+.med-edit { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
+.dose-list, .elder-list, .inbox { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.dose { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; border: 1px solid var(--line); }
+.dose-time { flex: none; min-width: 64px; font-weight: 700; font-size: 1.0625rem; }
+.dose-what { flex: 1; min-width: 0; display: grid; }
+.dose-what small { color: var(--muted); }
+.dose.due { border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint) inset; }
+.dose.missed { border-color: rgba(255, 122, 131, 0.5); }
+.dose.taken { opacity: 0.6; }
+.dose-btn { min-height: 44px; padding: 8px 16px; }
+.dose-done { color: var(--routine); font-weight: 700; white-space: nowrap; }
+.elder { padding: 14px; border-radius: 16px; border: 1px solid var(--line); display: grid; gap: 10px; }
+.elder.missed, .elder.help { border-color: var(--urgent); background: var(--urgent-bg); }
+.elder.ok { border-color: rgba(95, 227, 196, 0.45); }
+.elder-top { display: flex; gap: 12px; align-items: center; }
+.elder-icon { font-size: 1.75rem; }
+.elder-who { display: grid; }
+.elder-who small { color: var(--muted); }
+.elder-week { display: flex; gap: 6px; }
+.elder-week span { flex: 1; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.1); }
+.elder-week span.ok { background: var(--mint); }
+.elder-week span.help { background: var(--urgent); }
+.elder-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.elder-acts .btn { min-height: 40px; padding: 8px 12px; font-size: 0.875rem; }
+.donor-badge {
+  display: inline-grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; margin: 0 0 8px;
+  background: rgba(255, 122, 131, 0.15); border: 2px solid var(--urgent); color: #ffd7da; font-size: 1.5rem; font-weight: 800;
+}
+.donor-badge.small { width: 46px; height: 46px; font-size: 1rem; margin: 0; flex: none; }
+.area-alert { border-left: 4px solid #f5b14c; }
+.area-alert.alert { border-left-color: var(--urgent); }
+[dir="rtl"] .area-alert { border-left: 0; border-right: 4px solid #f5b14c; }
+[dir="rtl"] .area-alert.alert { border-right-color: var(--urgent); }
+.area-tag { margin: 0 0 4px; color: var(--muted); font-size: 0.875rem; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 14px; }
+.tiles a {
+  display: grid; justify-items: center; gap: 6px; padding: 14px 6px; border-radius: 16px; border: 1px solid var(--line-strong);
+  background: var(--paper); color: var(--ink); text-decoration: none; font-size: 0.8125rem; text-align: center; font-weight: 600;
+}
+.tiles a span { font-size: 1.625rem; }
+.inbox a { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.inbox li.unread a { border-color: var(--mint); }
+.inbox span { color: var(--muted); font-size: 0.875rem; }
+.inbox small { color: var(--faint); font-size: 0.75rem; }
+.dot-new { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--urgent); vertical-align: middle; }
+
+/* Elder check-in page: very large and simple */
+.patient.checkin { display: grid; gap: 16px; align-content: start; text-align: center; padding-top: 28px; }
+.patient.checkin h1 { font-size: 1.75rem; margin: 0; }
+.ck-q { font-size: 1.75rem; font-weight: 700; margin: 4px 0; }
+.ck-say { justify-self: center; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); border-radius: 999px; padding: 10px 20px; font: inherit; font-size: 1.0625rem; }
+.ck-btn {
+  display: grid; justify-items: center; gap: 6px; padding: 28px 16px; border-radius: 28px; border: 0; font: inherit;
+  font-size: 1.75rem; font-weight: 800; cursor: pointer; min-height: 150px;
+}
+.ck-btn span { font-size: 3rem; }
+.ck-btn.ok { background: linear-gradient(180deg, #7ef0d2, #3fcfa9); color: #02201a; box-shadow: 0 14px 40px rgba(95, 227, 196, 0.3); }
+.ck-btn.help { background: linear-gradient(180deg, #ff9aa1, #ff5d68); color: #2a0508; box-shadow: 0 14px 40px rgba(255, 93, 104, 0.3); }
+.ck-btn:disabled { opacity: 0.6; }
+.ck-done { padding: 28px 16px; border-radius: 28px; border: 1px solid var(--line-strong); font-size: 1.375rem; }
+.ck-done span { font-size: 3.5rem; display: block; }
+.ck-done.help { background: var(--urgent-bg); border-color: var(--urgent); }
+.ck-1122 { justify-self: center; padding: 14px 24px; border-radius: 999px; background: var(--urgent); color: #2a0508; font-weight: 800; text-decoration: none; font-size: 1.125rem; }
+.ck-push { justify-self: center; border: 1px solid var(--line-strong); background: transparent; color: var(--muted); border-radius: 999px; padding: 10px 18px; font: inherit; }

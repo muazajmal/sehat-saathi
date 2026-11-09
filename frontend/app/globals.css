@@ -2304,3 +2304,55 @@ a.sslot:hover {
 .welcome .welcome-install:empty {
   display: none;
 }
+
+/* Opening screen: community links */
+.welcome-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.welcome-tiles a {
+  padding: 11px 10px; border-radius: 14px; border: 1px solid var(--line); color: var(--muted); text-decoration: none;
+  font-size: 0.875rem; text-align: center; background: rgba(255, 255, 255, 0.02);
+}
+.welcome[dir="rtl"] .welcome-tiles a { font-family: var(--urdu); line-height: 1.9; }
+
+/* Desk: area health + blood */
+.area-map { width: 100%; height: auto; display: block; border-radius: 16px; border: 1px solid var(--line); }
+.am-ring { transform-box: fill-box; transform-origin: center; animation: am-ring 1.8s ease-out infinite; }
+@keyframes am-ring { to { transform: scale(1.7); opacity: 0; } }
+.am-dot.focus circle { stroke-width: 3; }
+.spark { width: 70px; height: 22px; color: var(--mint); flex: none; }
+.rise.alert .spark { color: var(--urgent); }
+.rise.watch .spark { color: #f5b14c; }
+.lvl { font-size: 0.75rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; border: 1px solid; }
+.lvl.alert { color: var(--urgent); border-color: var(--urgent); }
+.lvl.watch { color: #f5b14c; border-color: #f5b14c; }
+.lvl.sent { color: var(--mint); border-color: var(--mint); }
+.alert-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 860px) { .alert-edit { grid-template-columns: 1fr; } }
+.alert-edit > div { display: grid; gap: 6px; }
+.team-card textarea {
+  padding: 11px 13px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  font: inherit; width: 100%; resize: vertical;
+}
+.team-card .urdu { font-family: var(--urdu); line-height: 2; }
+.team-card .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn[aria-pressed="true"] { background: var(--teal-soft); border-color: var(--mint); font-weight: 700; }
+.blood-groups { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+@media (max-width: 860px) { .blood-groups { grid-template-columns: repeat(4, 1fr); } }
+.bg-tile { padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: grid; gap: 2px; text-align: center; }
+.bg-tile b { font-size: 1.25rem; color: #ffd7da; }
+.bg-tile span { color: var(--muted); font-size: 0.8125rem; }
+.blood-req { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 10px; }
+.blood-req.filled { opacity: 0.7; }
+.br-head { display: flex; gap: 10px; align-items: center; }
+.br-head .who { flex: 1; min-width: 0; display: grid; }
+.br-head small { color: var(--faint); }
+.team-list li.yes { border-color: var(--mint); }
+.ans { font-size: 0.8125rem; color: var(--muted); white-space: nowrap; }
+.ans.yes { color: var(--mint); font-weight: 700; }
+.ans.no { color: var(--faint); }
+.donor-badge.small {
+  display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; flex: none;
+  background: rgba(255, 122, 131, 0.15); border: 2px solid var(--urgent); color: #ffd7da; font-weight: 800;
+}
+.team-list li.rise { flex-wrap: wrap; }
+.team-list li.rise .who { flex: 1 1 100%; }
+.team-list li.rise .acts { margin-left: auto; }

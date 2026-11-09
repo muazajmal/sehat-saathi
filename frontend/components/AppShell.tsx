@@ -115,6 +115,18 @@ export default function AppShell({
             <span className="label">Ambulances</span>
             {joining > 0 && <span className="rail-count" aria-label={`${joining} to check`}>{joining}</span>}
           </Link>
+          <Link href="/desk/area" className="rail-link" aria-current={path === "/desk/area" ? "page" : undefined}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" />
+            </svg>
+            <span className="label">Area health</span>
+          </Link>
+          <Link href="/desk/blood" className="rail-link" aria-current={path === "/desk/blood" ? "page" : undefined}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11Z" />
+            </svg>
+            <span className="label">Blood</span>
+          </Link>
           {account?.role === "admin" && (
             <Link href="/desk/team" className="rail-link" aria-current={path === "/desk/team" ? "page" : undefined}>
               <TeamIcon />

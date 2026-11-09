@@ -95,6 +95,20 @@ Live: website https://sehat-saathi-eta.vercel.app, API https://sehat-saathi-api.
 project's own Vercel addresses (`CORS_ORIGIN_REGEX`). Urgent cases are also sent to an n8n webhook
 (`N8N_ESCALATION_WEBHOOK`) that logs them to the "Sehat Saathi - Urgent Alerts" data table.
 
+## Community features
+
+| Feature | Who | Where |
+| --- | --- | --- |
+| **Area health alerts** | Desk spots an illness rising in a Multan neighbourhood (this week vs the 4 weeks before; watch at 4+ cases and 2×, alert at 8+ and 3×). AI (or a template) drafts an Urdu + English notice; a doctor edits and approves it before it goes on `/alerts` and to people in that area. | `/desk/area`, `/alerts` |
+| **Blood donor network** | Local volunteers sign up with their blood group (`/donate`). The desk asks the nearest donors whose blood suits the patient and who haven't given in 3 months. A donor's number is shown only after they say yes. | `/desk/blood`, `/donate`, `/donate/answer` |
+| **Medicine reminders** | Patient photographs their prescription; Gemini reads it (names and doses copied exactly, unclear parts flagged), the patient checks the list, then gets reminders and ticks doses. Never changes what the doctor wrote. | `/patient/medicines` |
+| **Elder check-ins** | Family adds a parent who lives alone. Every day the elder taps "I'm okay" or "I need help" on a big-button page. No answer: the family is told. Help: the family is told and an urgent case appears on the desk. | `/patient/family`, `/checkin` |
+
+Notifications are free: an in-app inbox plus phone notifications from the installed app (web push; keys are
+derived from `AUTH_SECRET`, or set `VAPID_PRIVATE_KEY`). Set `N8N_NOTIFY_WEBHOOK` to also send them through n8n
+(WhatsApp/Telegram/SMS). `.github/workflows/reminders.yml` calls `/api/cron/tick` every 15 minutes for free;
+set a `CRON_KEY` secret in both GitHub and Vercel to lock that endpoint.
+
 ## Logins: hospitals, doctors and patients
 
 Open `/login`. It has two doors:

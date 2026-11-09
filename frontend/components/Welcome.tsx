@@ -19,6 +19,10 @@ const W = {
     newAcc: "New? Create a free account",
     staff: "Hospital / Doctor login",
     firstAid: "First aid videos: what to do in an emergency",
+    donate: "Donate blood",
+    alerts: "Area alerts",
+    meds: "Medicine reminders",
+    family: "Family check-ins",
     cont: (n: string) => `Continue as ${n}`,
     notYou: "Not you? Log out",
     sos: "Emergency? Chest pain, can't breathe, unconscious:",
@@ -36,6 +40,10 @@ const W = {
     newAcc: "نئے ہیں؟ مفت اکاؤنٹ بنائیں",
     staff: "ہسپتال / ڈاکٹر لاگ ان",
     firstAid: "ابتدائی طبی امداد کی ویڈیوز: ایمرجنسی میں کیا کریں",
+    donate: "خون کا عطیہ",
+    alerts: "علاقے کے الرٹس",
+    meds: "دوا کی یاد دہانی",
+    family: "گھر والوں کی خیریت",
     cont: (n: string) => `${n} کے طور پر جاری رکھیں`,
     notYou: "آپ نہیں؟ لاگ آؤٹ کریں",
     sos: "ایمرجنسی؟ سینے میں درد، سانس میں تکلیف، بے ہوشی:",
@@ -120,6 +128,12 @@ export default function Welcome() {
         <Link className="welcome-btn quiet" href="/first-aid">
           <b>🩺 {t.firstAid}</b>
         </Link>
+        <nav className="welcome-tiles">
+          <Link href="/donate">🩸 {t.donate}</Link>
+          <Link href="/alerts">📢 {t.alerts}</Link>
+          <Link href="/patient/medicines">💊 {t.meds}</Link>
+          <Link href="/patient/family">👵 {t.family}</Link>
+        </nav>
       </section>
 
       <div className="patient welcome-install">

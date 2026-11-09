@@ -322,6 +322,11 @@ class PatientTrip(BaseModel):
     km_away: float
     eta_min: int
     mode: str
+    position: dict | None = None
+    start: dict | None = None
+    patient: dict | None = None
+    hospital_position: dict | None = None
+    progress: float = 0.0
 
 
 class PatientCharge(BaseModel):

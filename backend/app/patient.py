@@ -52,6 +52,9 @@ def status(db: Session, case_id: int, token: str) -> dict:
             "km_away": t["km_to_patient"] if heading_to_patient else t["km_to_hospital"],
             "eta_min": t["eta_patient_min"] if heading_to_patient else t["eta_hospital_min"],
             "mode": t["mode"],
+            # For the live map on the patient's screen.
+            "position": t["position"], "start": t["start"], "patient": t["patient"],
+            "hospital_position": t["hospital_position"], "progress": t["progress"],
         }
     return {
         "case_id": case.id,
