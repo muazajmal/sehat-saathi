@@ -547,3 +547,316 @@
   font-size: 0.875rem;
   text-decoration: underline;
 }
+
+/* First aid: step-by-step video player */
+.fa-player {
+  display: grid;
+  gap: 12px;
+}
+.fa-screen {
+  position: relative;
+  border-radius: 18px;
+  padding: 16px 16px 20px;
+  min-height: 300px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  text-align: center;
+  background:
+    radial-gradient(260px 180px at 50% 30%, rgba(95, 227, 196, 0.14), transparent 70%),
+    #030a09;
+  border: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+.fa-bar {
+  width: 100%;
+  display: flex;
+  gap: 4px;
+  direction: ltr;
+}
+.fa-player[dir="rtl"] .fa-bar {
+  flex-direction: row-reverse;
+}
+.fa-bar span {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  position: relative;
+}
+.fa-bar span.done,
+.fa-bar span.now {
+  background: var(--mint);
+}
+.fa-bar span.now.playing {
+  background: rgba(255, 255, 255, 0.14);
+}
+.fa-bar span i {
+  position: absolute;
+  inset: 0;
+  background: var(--mint);
+  transform-origin: left;
+  animation: fa-fill linear forwards;
+}
+.fa-player[dir="rtl"] .fa-bar span i {
+  transform-origin: right;
+}
+.fa-pic {
+  margin-top: 14px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 4.5rem;
+  line-height: 1;
+  background: rgba(95, 227, 196, 0.08);
+  border: 1px solid var(--line-strong);
+  animation: fa-pop 0.45s ease-out both;
+}
+.fa-pic.live {
+  box-shadow: 0 0 0 0 rgba(95, 227, 196, 0.45);
+  animation:
+    fa-pop 0.45s ease-out both,
+    fa-ring 1.6s ease-out 0.45s infinite;
+}
+.fa-count {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.fa-caption {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.45;
+  max-width: 30ch;
+  animation: fa-rise 0.4s ease-out both;
+}
+.fa-caption.urdu {
+  font-family: var(--urdu);
+  font-size: 1.3125rem;
+  line-height: 2;
+  font-weight: 500;
+}
+.fa-controls {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  gap: 8px;
+}
+.fa-btn {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+.fa-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.fa-play {
+  background: linear-gradient(180deg, var(--teal-strong), var(--mint));
+  color: var(--on-teal);
+  border-color: transparent;
+  font-weight: 700;
+}
+.fa-next {
+  border: 1px solid rgba(255, 122, 131, 0.4);
+  background: var(--urgent-bg);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fa-note {
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.fa-note a {
+  color: var(--muted);
+}
+
+/* Pop-up beside the status page */
+.fa-sheet {
+  position: fixed;
+  z-index: 60;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: 20px;
+  background: var(--paper-solid);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.55);
+  display: grid;
+  gap: 10px;
+  animation: fa-slide-up 0.35s ease-out both;
+}
+@media (min-width: 980px) {
+  .fa-sheet {
+    left: auto;
+    right: 20px;
+    top: 20px;
+    bottom: 20px;
+    width: 400px;
+    max-height: none;
+    animation-name: fa-slide-in;
+  }
+}
+.fa-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.fa-head div {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.fa-head small {
+  color: var(--routine);
+  font-weight: 600;
+}
+.fa-hide {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.fa-call {
+  text-align: center;
+  padding: 10px;
+  border-radius: 999px;
+  background: var(--urgent);
+  color: #2a0508;
+  font-weight: 700;
+  text-decoration: none;
+}
+.fa-title {
+  margin: 2px 0 0;
+  font-size: 1.0625rem;
+}
+.fa-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+.fa-tabs button,
+.fa-grid button {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fa-tabs button[aria-selected="true"],
+.fa-grid button[aria-pressed="true"] {
+  background: var(--teal-soft);
+  color: var(--ink);
+  border-color: var(--mint);
+}
+.fa-pill {
+  position: fixed;
+  z-index: 60;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 20px;
+  background: linear-gradient(180deg, var(--teal-strong), var(--mint));
+  color: var(--on-teal);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(95, 227, 196, 0.3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fa-grid button {
+  white-space: normal;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  color: var(--ink);
+  text-align: center;
+}
+.fa-grid button span {
+  font-size: 1.75rem;
+}
+@keyframes fa-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes fa-pop {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+}
+@keyframes fa-rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+@keyframes fa-ring {
+  to {
+    box-shadow: 0 0 0 22px rgba(95, 227, 196, 0);
+  }
+}
+@keyframes fa-slide-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+@keyframes fa-slide-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fa-pic,
+  .fa-pic.live,
+  .fa-caption,
+  .fa-sheet,
+  .fa-bar span i {
+    animation: none;
+  }
+}
+@media (min-width: 980px) {
+  .patient:has(.fa-sheet) {
+    margin-left: max(16px, calc(50vw - 280px - 220px));
+  }
+}

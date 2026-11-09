@@ -18,6 +18,7 @@ const W = {
     patientSub: "See your requests and bookings",
     newAcc: "New? Create a free account",
     staff: "Hospital / Doctor login",
+    firstAid: "First aid videos: what to do in an emergency",
     cont: (n: string) => `Continue as ${n}`,
     notYou: "Not you? Log out",
     sos: "Emergency? Chest pain, can't breathe, unconscious:",
@@ -34,6 +35,7 @@ const W = {
     patientSub: "اپنی درخواستیں اور وقت دیکھیں",
     newAcc: "نئے ہیں؟ مفت اکاؤنٹ بنائیں",
     staff: "ہسپتال / ڈاکٹر لاگ ان",
+    firstAid: "ابتدائی طبی امداد کی ویڈیوز: ایمرجنسی میں کیا کریں",
     cont: (n: string) => `${n} کے طور پر جاری رکھیں`,
     notYou: "آپ نہیں؟ لاگ آؤٹ کریں",
     sos: "ایمرجنسی؟ سینے میں درد، سانس میں تکلیف، بے ہوشی:",
@@ -115,6 +117,9 @@ export default function Welcome() {
             </button>
           </>
         )}
+        <Link className="welcome-btn quiet" href="/first-aid">
+          <b>🩺 {t.firstAid}</b>
+        </Link>
       </section>
 
       <div className="patient welcome-install">

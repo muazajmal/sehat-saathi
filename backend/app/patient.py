@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import transport, billing, dispatch
+from .first_aid import guides_for
 from .config import settings
 from .models import Case, CaseAccess, CaseLocation
 
@@ -68,6 +69,7 @@ def status(db: Session, case_id: int, token: str) -> dict:
         "out_of_area": bool(loc) and not transport.in_service_area(loc.lat, loc.lng),
         "nearest_hospital_km": round(transport.nearest_hospital_km(loc.lat, loc.lng), 1) if loc else None,
         "trip": trip,
+        "first_aid": guides_for(case.red_flags or [], case.message),
         "charges": billing.patient_view(db, case),
         "created_at": case.created_at,
     }

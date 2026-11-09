@@ -66,6 +66,7 @@ export interface PatientStatus {
     mode: "live" | "simulated" | "no_signal" | "finished";
   } | null;
   charges: { id: number; kind: string; description: string; amount_pkr: number; status: "due" | "paid" | "waived"; method: PayMethod | null }[];
+  first_aid: string[];
   created_at: string;
 }
 

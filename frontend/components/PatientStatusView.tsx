@@ -18,6 +18,7 @@ import { T } from "../lib/patientText";
 import { EmergencyBar, PatientHeader, useClinicName, usePatientLang } from "./PatientPortal";
 import InstallApp from "./InstallApp";
 import ReadAloud from "./ReadAloud";
+import FirstAidSheet from "./FirstAidSheet";
 
 export default function PatientStatusView() {
   const params = useSearchParams();
@@ -215,6 +216,13 @@ export default function PatientStatusView() {
       )}
       <InstallApp lang={lang} />
       <p className="p-foot">{t.notDiagnosis}</p>
+      {st && st.first_aid.length > 0 && st.status !== "rejected" && (
+        <FirstAidSheet
+          keys={st.first_aid}
+          lang={lang}
+          etaMin={trip && trip.phase === "to_patient" ? trip.eta_min : null}
+        />
+      )}
     </main>
   );
 }

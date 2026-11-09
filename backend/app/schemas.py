@@ -349,6 +349,7 @@ class PatientStatusOut(BaseModel):
     out_of_area: bool = False
     nearest_hospital_km: float | None = None
     trip: PatientTrip | None
+    first_aid: list[str] = []
     charges: list[PatientCharge] = []
     created_at: datetime
 

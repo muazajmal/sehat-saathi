@@ -8,3 +8,4 @@ __pycache__/
 .env.local
 next-env.d.ts
 tsconfig.tsbuildinfo
+backend/sehat.db
