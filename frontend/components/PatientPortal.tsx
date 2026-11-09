@@ -97,6 +97,7 @@ export default function PatientPortal() {
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot: people never fill this in
+  const [email, setEmail] = useState("");
   // Logged-in patients don't need to type their name and number again.
   useEffect(() => {
     const s = session.get();
@@ -129,7 +130,7 @@ export default function PatientPortal() {
     setError(null);
     try {
       const full = composeMessage(quick, lang, message);
-      const c = await api.intake(p, name.trim(), full, quickPayload(quick));
+      const c = await api.intake(p, name.trim(), full, quickPayload(quick), email.trim());
       rememberRequest({ c: c.id, t: c.access_token, at: c.created_at, preview: full.slice(0, 60) });
       router.push(`/patient/status?c=${c.id}&t=${encodeURIComponent(c.access_token)}`);
     } catch (err) {
@@ -173,6 +174,23 @@ export default function PatientPortal() {
           required
         />
         <p className="p-muted small">{t.phoneHint}</p>
+        <label htmlFor="p-email">{lang === "ur" ? "ای میل (اختیاری)" : "Email (optional)"}</label>
+        <input
+          id="p-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          inputMode="email"
+          autoComplete="email"
+          placeholder="name@gmail.com"
+          dir="ltr"
+          maxLength={200}
+        />
+        <p className="p-muted small">
+          {lang === "ur"
+            ? "ڈاکٹر وقت کنفرم کرے تو آپ کو ای میل آئے گی۔"
+            : "We'll email you when a doctor confirms your appointment."}
+        </p>
         <input
           className="hp"
           tabIndex={-1}

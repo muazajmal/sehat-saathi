@@ -407,3 +407,25 @@ class Checkin(Base):
     day: Mapped[str] = mapped_column(String(10), index=True)
     status: Mapped[str] = mapped_column(String(8))  # ok | help
     at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class ContactEmail(Base):
+    """A patient's email for booking confirmations (optional; given on the request form or at sign-up)."""
+
+    __tablename__ = "contact_emails"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(200))
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class EmailSent(Base):
+    """One row per email actually handed to Gmail, so each booking email goes out only once."""
+
+    __tablename__ = "emails_sent"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    key: Mapped[str] = mapped_column(String(80), unique=True)  # "case:12:confirmed"
+    to: Mapped[str] = mapped_column(String(200))
+    at: Mapped[datetime] = mapped_column(DateTime)

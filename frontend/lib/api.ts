@@ -72,6 +72,7 @@ export interface PatientStatus {
   } | null;
   charges: { id: number; kind: string; description: string; amount_pkr: number; status: "due" | "paid" | "waived"; method: PayMethod | null }[];
   first_aid: string[];
+  email_to?: string | null;
   created_at: string;
 }
 
@@ -411,8 +412,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   login: (phone: string, password: string, portal: "patient" | "staff") =>
     call<SessionInfo>("/api/auth/login", { method: "POST", body: JSON.stringify({ phone, password, portal }) }),
-  signup: (phone: string, name: string, password: string) =>
-    call<SessionInfo>("/api/auth/signup", { method: "POST", body: JSON.stringify({ phone, name, password }) }),
+  signup: (phone: string, name: string, password: string, email = "") =>
+    call<SessionInfo>("/api/auth/signup", { method: "POST", body: JSON.stringify({ phone, name, password, email }) }),
   me: () => call<Account>("/api/auth/me"),
   changePassword: (old_password: string, new_password: string) =>
     call<{ ok: boolean }>("/api/auth/password", { method: "POST", body: JSON.stringify({ old_password, new_password }) }),
@@ -443,8 +444,8 @@ export const api = {
   lead: (body: { name: string; clinic: string; city: string; phone: string; size: string }) =>
     call<{ id: number }>("/api/leads", { method: "POST", body: JSON.stringify(body) }),
   audit: (caseId: number) => call<AuditEvent[]>(`/api/audit?case_id=${caseId}`),
-  intake: (phone: string, name: string, message: string, quick?: object) =>
-    call<IntakeResult>("/api/intake", { method: "POST", body: JSON.stringify({ phone, name, message, channel: "web", quick }) }),
+  intake: (phone: string, name: string, message: string, quick?: object, email?: string) =>
+    call<IntakeResult>("/api/intake", { method: "POST", body: JSON.stringify({ phone, name, message, channel: "web", quick, email: email || "" }) }),
   transcribe: (audio_b64: string, ui_lang: "ur" | "en") =>
     call<{ text: string }>("/api/transcribe", { method: "POST", body: JSON.stringify({ audio_b64, mime: "audio/wav", ui_lang }) }),
   patientStatus: (c: number, t: string) =>

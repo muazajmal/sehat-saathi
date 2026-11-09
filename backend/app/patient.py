@@ -20,6 +20,12 @@ def issue_token(db: Session, case_id: int) -> str:
     return access.token
 
 
+def _email_to(db: Session, phone: str) -> str | None:
+    from . import emails  # imported here: emails also imports this module
+
+    return emails.masked(emails.email_for(db, phone))
+
+
 def status_link(case_id: int, token: str) -> str:
     return f"{settings.frontend_url}/patient/status?c={case_id}&t={token}"
 
@@ -73,6 +79,7 @@ def status(db: Session, case_id: int, token: str) -> dict:
         "nearest_hospital_km": round(transport.nearest_hospital_km(loc.lat, loc.lng), 1) if loc else None,
         "trip": trip,
         "first_aid": guides_for(case.red_flags or [], case.message),
+        "email_to": _email_to(db, case.patient.phone),
         "charges": billing.patient_view(db, case),
         "created_at": case.created_at,
     }

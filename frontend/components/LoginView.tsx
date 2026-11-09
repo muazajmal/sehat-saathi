@@ -27,6 +27,7 @@ export default function LoginView() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +45,7 @@ export default function LoginView() {
     setError(null);
     setBusy(true);
     try {
-      const s = isSignup ? await api.signup(phone, name, password) : await api.login(phone, password, door);
+      const s = isSignup ? await api.signup(phone, name, password, email.trim()) : await api.login(phone, password, door);
       save(s);
       router.push(home(s.account.role));
     } catch (err) {
@@ -99,6 +100,13 @@ export default function LoginView() {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
+        {isSignup && (
+          <>
+            <label htmlFor="l-email">Email (optional, for appointment confirmations)</label>
+            <input id="l-email" type="email" inputMode="email" autoComplete="email" dir="ltr" placeholder="name@gmail.com"
+              value={email} onChange={(e) => setEmail(e.target.value)} />
+          </>
+        )}
         <label htmlFor="l-pass">Password{isSignup ? " (at least 6 letters)" : ""}</label>
         <input
           id="l-pass"

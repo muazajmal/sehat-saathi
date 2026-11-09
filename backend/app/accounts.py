@@ -28,6 +28,7 @@ class SignupIn(BaseModel):
     phone: str = Field(min_length=6, max_length=32)
     name: str = Field(min_length=2, max_length=120)
     password: str = Field(min_length=6, max_length=200)
+    email: str = Field(default="", max_length=200)
 
 
 class AccountOut(BaseModel):
@@ -108,6 +109,10 @@ def signup(body: SignupIn, db: Session = Depends(get_db)):
     """Anyone in the community can make a patient account. Staff accounts are made by the admin."""
     phone = auth.normalize_phone(body.phone)
     a = create(db, "patient", phone, body.name, body.password)
+    if body.email.strip():
+        from . import emails
+
+        emails.save_email(db, phone, body.email)
     p = db.scalar(select(Patient).where(Patient.phone == phone))
     if p and not p.name:
         p.name = a.name

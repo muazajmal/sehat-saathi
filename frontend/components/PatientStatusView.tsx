@@ -114,6 +114,15 @@ export default function PatientStatusView() {
             </section>
           )}
 
+          {st.email_to && st.status !== "rejected" && (
+            <p className="p-muted small p-email-note">
+              ✉️{" "}
+              {st.status === "approved"
+                ? lang === "ur" ? `تصدیقی ای میل ${st.email_to} پر بھیج دی گئی ہے۔` : `Confirmation emailed to ${st.email_to}.`
+                : lang === "ur" ? `وقت کنفرم ہونے پر ${st.email_to} پر ای میل آئے گی۔` : `We'll email ${st.email_to} when your time is confirmed.`}
+            </p>
+          )}
+
           {trip && trip.status !== "cancelled" && (
             <section className={`p-card p-trip phase-${trip.phase}`}>
               <h2>

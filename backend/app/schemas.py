@@ -30,6 +30,8 @@ class IntakeIn(BaseModel):
     lng: float | None = Field(default=None, ge=-180, le=180)
     location_label: str = Field(default="", max_length=200)
     quick: QuickIn | None = None
+    # Optional: for a "your appointment is confirmed" email.
+    email: str = Field(default="", max_length=200)
 
 
 class SlotOut(BaseModel):
@@ -355,6 +357,7 @@ class PatientStatusOut(BaseModel):
     nearest_hospital_km: float | None = None
     trip: PatientTrip | None
     first_aid: list[str] = []
+    email_to: str | None = None
     charges: list[PatientCharge] = []
     created_at: datetime
 

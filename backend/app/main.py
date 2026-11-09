@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import accounts, auth, community, billing, dispatch, members, patient, services, transport
+from . import accounts, auth, community, emails, billing, dispatch, members, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
 from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
@@ -99,6 +99,7 @@ app = FastAPI(
 )
 app.include_router(accounts.router)
 app.include_router(community.router)
+app.include_router(emails.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -154,6 +155,8 @@ def intake(body: IntakeIn, db: Session = Depends(get_db)):
                                   body.quick.model_dump() if body.quick else None)
     if body.lat is not None and body.lng is not None:
         dispatch.set_location(db, case.id, body.lat, body.lng, body.location_label, "web")
+    if body.email.strip():
+        emails.save_email(db, case.patient.phone, body.email)
     token = patient.issue_token(db, case.id)
     db.refresh(case)
     out = IntakeOut.model_validate(
@@ -214,12 +217,16 @@ def get_case(case_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/cases/{case_id}/approve", response_model=CaseOut)
 def approve_case(case_id: int, body: ApproveIn, who=Depends(staff_only), db: Session = Depends(get_db)):
-    return services.approve(db, case_id, acting(who, body.staff), body.slot_id, body.note)
+    case = services.approve(db, case_id, acting(who, body.staff), body.slot_id, body.note)
+    emails.trigger(db, case, "confirmed")
+    return case
 
 
 @app.post("/api/cases/{case_id}/reject", response_model=CaseOut)
 def reject_case(case_id: int, body: RejectIn, who=Depends(staff_only), db: Session = Depends(get_db)):
-    return services.reject(db, case_id, acting(who, body.staff), body.note)
+    case = services.reject(db, case_id, acting(who, body.staff), body.note)
+    emails.trigger(db, case, "declined")
+    return case
 
 
 @app.post("/api/cases/{case_id}/called", response_model=CaseOut)
