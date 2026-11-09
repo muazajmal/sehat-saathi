@@ -75,28 +75,30 @@ def symptom_group(text: str) -> str | None:
     return None
 
 
-def signals(db: Session, since):
-    """(area, group, time) for every case with a shared location, plus demo history."""
+def signals(db: Session, since, hospital_id: int = 1):
+    """(area, group, time) for every case at this hospital with a shared location, plus demo history."""
     out = []
     rows = db.execute(select(Case.message, Case.summary, Case.created_at, CaseLocation.lat, CaseLocation.lng)
-                      .join(CaseLocation, CaseLocation.case_id == Case.id).where(Case.created_at >= since))
+                      .join(CaseLocation, CaseLocation.case_id == Case.id)
+                      .where(Case.created_at >= since, Case.hospital_id == hospital_id))
     for msg, summary, at, lat, lng in rows:
         area, grp = nearest_area(lat, lng), symptom_group(f"{msg} {summary}")
         if area and grp:
             out.append((area, grp, at))
-    for s in db.scalars(select(SampleSignal).where(SampleSignal.at >= since)):
-        out.append((s.area, s.group, s.at))
+    if hospital_id == 1:  # demo history belongs to the demo clinic only
+        for s in db.scalars(select(SampleSignal).where(SampleSignal.at >= since)):
+            out.append((s.area, s.group, s.at))
     return out
 
 
-def detect(db: Session) -> list[dict]:
+def detect(db: Session, hospital_id: int = 1) -> list[dict]:
     """This week vs the average of the 4 weeks before. A rise needs at least 4 cases and double
     the usual; 'alert' needs 8 cases and triple. Simple, explainable numbers a doctor can check."""
     t = now()
     week_ago, base_from = t - timedelta(days=7), t - timedelta(days=35)
     this_week, before = defaultdict(int), defaultdict(int)
     daily = defaultdict(lambda: [0] * 7)
-    for area, grp, at in signals(db, base_from):
+    for area, grp, at in signals(db, base_from, hospital_id):
         if at >= week_ago:
             this_week[(area, grp)] += 1
             daily[(area, grp)][min(6, max(0, (at - week_ago).days))] += 1
@@ -117,11 +119,11 @@ def detect(db: Session) -> list[dict]:
     return found
 
 
-def map_points(db: Session) -> list[dict]:
+def map_points(db: Session, hospital_id: int = 1) -> list[dict]:
     """Cases per area this week, for the desk map."""
     week_ago = now() - timedelta(days=7)
     count = defaultdict(int)
-    for area, _grp, _at in signals(db, week_ago):
+    for area, _grp, _at in signals(db, week_ago, hospital_id):
         count[area] += 1
     return [{"area": a, "lat": lat, "lng": lng, "cases": count.get(a, 0)} for a, lat, lng in AREAS]
 
@@ -135,7 +137,7 @@ Never name a diagnosis as confirmed, never mention medicines or doses. End with:
 Urdu in Urdu script. Body under 70 words each. Title under 9 words."""
 
 
-def draft(db: Session, found: dict) -> AreaAlert:
+def draft(db: Session, found: dict, hospital_id: int = 1) -> AreaAlert:
     grp = found["group"]
     adv = ADVICE[grp]
     title_en = f"{GROUPS[grp]['en']} cases rising in {found['area']}"
@@ -151,7 +153,7 @@ def draft(db: Session, found: dict) -> AreaAlert:
         by = settings.gemini_model
     a = AreaAlert(area=found["area"], group=grp, level=found["level"], cases_week=found["cases_week"],
                   baseline_week=found["baseline_week"], title_en=title_en[:200], body_en=body_en, title_ur=title_ur[:200],
-                  body_ur=body_ur, drafted_by=by, status="draft", created_at=now())
+                  body_ur=body_ur, drafted_by=by, status="draft", created_at=now(), hospital_id=hospital_id)
     db.add(a)
     db.commit()
     db.refresh(a)

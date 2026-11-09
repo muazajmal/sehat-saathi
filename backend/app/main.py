@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import accounts, auth, community, emails, billing, dispatch, members, patient, services, transport
+from . import accounts, auth, community, emails, ops, tenancy, billing, dispatch, members, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
 from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
@@ -64,6 +64,9 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 
 def _init_db():
     Base.metadata.create_all(engine)
+    from . import tenancy
+
+    tenancy.migrate(engine)
     if os.getenv("SEED_DEMO", "1") == "1":
         from .seed import seed
 
@@ -71,6 +74,7 @@ def _init_db():
     from .db import SessionLocal
 
     with SessionLocal() as db:
+        tenancy.ensure_default(db)
         accounts.ensure_accounts(db)
         if os.getenv("SEED_DEMO", "1") == "1":
             community.seed_community(db)
@@ -100,6 +104,7 @@ app = FastAPI(
 app.include_router(accounts.router)
 app.include_router(community.router)
 app.include_router(emails.router)
+app.include_router(ops.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -118,6 +123,11 @@ def staff_only(
 ):
     """The desk and patient data: a doctor or admin login (or the STAFF_KEY for scripts)."""
     return auth.staff_account(db, authorization, x_staff_key)
+
+
+def H(who=Depends(staff_only)) -> int:
+    """The hospital whose data this staff member may see."""
+    return tenancy.hid(who)
 
 
 def acting(who, typed: str) -> str:
@@ -151,8 +161,10 @@ def staff_check():
 @app.post("/api/intake", response_model=IntakeOut, status_code=201)
 def intake(body: IntakeIn, db: Session = Depends(get_db)):
     """A patient message from any channel (patient website, demo, n8n). Public."""
+    hosp = tenancy.active(db, body.hospital)
+    tenancy.limit(db, f"intake:{body.phone.strip()[-10:]}", 12, 60, "Too many requests from this number. Please wait, or call 1122 in an emergency.")
     case = services.create_intake(db, body.phone.strip(), body.name.strip(), body.message.strip(), body.channel,
-                                  body.quick.model_dump() if body.quick else None)
+                                  body.quick.model_dump() if body.quick else None, hosp.id)
     if body.lat is not None and body.lng is not None:
         dispatch.set_location(db, case.id, body.lat, body.lng, body.location_label, "web")
     if body.email.strip():
@@ -195,13 +207,14 @@ def triage_preview(body: IntakeIn):
 
 # ---------- Cases ----------
 
-@app.get("/api/cases", response_model=list[CaseOut], dependencies=STAFF)
+@app.get("/api/cases", response_model=list[CaseOut])
 def list_cases(
     status: Literal["pending_review", "approved", "rejected", "all"] = "pending_review",
     limit: int = Query(100, le=500),
+    h: int = Depends(H),
     db: Session = Depends(get_db),
 ):
-    q = select(Case).order_by(Case.created_at.desc()).limit(limit)
+    q = select(Case).where(Case.hospital_id == h).order_by(Case.created_at.desc()).limit(limit)
     if status != "all":
         q = q.where(Case.status == status)
     cases = list(db.scalars(q))
@@ -210,13 +223,14 @@ def list_cases(
     return cases
 
 
-@app.get("/api/cases/{case_id}", response_model=CaseOut, dependencies=STAFF)
-def get_case(case_id: int, db: Session = Depends(get_db)):
-    return services.get_case(db, case_id)
+@app.get("/api/cases/{case_id}", response_model=CaseOut)
+def get_case(case_id: int, h: int = Depends(H), db: Session = Depends(get_db)):
+    return tenancy.own_case(db, case_id, h)
 
 
 @app.post("/api/cases/{case_id}/approve", response_model=CaseOut)
 def approve_case(case_id: int, body: ApproveIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, tenancy.hid(who))
     case = services.approve(db, case_id, acting(who, body.staff), body.slot_id, body.note)
     emails.trigger(db, case, "confirmed")
     return case
@@ -224,6 +238,7 @@ def approve_case(case_id: int, body: ApproveIn, who=Depends(staff_only), db: Ses
 
 @app.post("/api/cases/{case_id}/reject", response_model=CaseOut)
 def reject_case(case_id: int, body: RejectIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, tenancy.hid(who))
     case = services.reject(db, case_id, acting(who, body.staff), body.note)
     emails.trigger(db, case, "declined")
     return case
@@ -231,21 +246,23 @@ def reject_case(case_id: int, body: RejectIn, who=Depends(staff_only), db: Sessi
 
 @app.post("/api/cases/{case_id}/called", response_model=CaseOut)
 def log_callback(case_id: int, body: CallbackIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, tenancy.hid(who))
     return services.mark_called(db, case_id, acting(who, body.staff), body.note)
 
 
 # ---------- Slots ----------
 
-@app.get("/api/slots", response_model=list[SlotOut], dependencies=STAFF)
+@app.get("/api/slots", response_model=list[SlotOut])
 def list_slots(
     status: Literal["open", "held", "booked", "all"] = "open",
     days: int = Query(2, ge=1, le=14),
+    h: int = Depends(H),
     db: Session = Depends(get_db),
 ):
     start = services.now()
     q = (
         select(Slot)
-        .where(Slot.starts_at >= start, Slot.starts_at <= start + timedelta(days=days))
+        .where(Slot.hospital_id == h, Slot.starts_at >= start, Slot.starts_at <= start + timedelta(days=days))
         .order_by(Slot.starts_at)
     )
     if status != "all":
@@ -253,24 +270,24 @@ def list_slots(
     return list(db.scalars(q))
 
 
-@app.post("/api/slots", response_model=SlotOut, status_code=201, dependencies=STAFF)
-def add_slot(body: SlotIn, db: Session = Depends(get_db)):
-    slot = Slot(**body.model_dump(), status="open")
+@app.post("/api/slots", response_model=SlotOut, status_code=201)
+def add_slot(body: SlotIn, h: int = Depends(H), db: Session = Depends(get_db)):
+    slot = Slot(**body.model_dump(), status="open", hospital_id=h)
     slot.starts_at = slot.starts_at.replace(tzinfo=None)
     db.add(slot)
     db.commit()
     return slot
 
 
-@app.get("/api/schedule", response_model=list[ScheduleSlot], dependencies=STAFF)
-def schedule(day: date | None = None, db: Session = Depends(get_db)):
+@app.get("/api/schedule", response_model=list[ScheduleSlot])
+def schedule(day: date | None = None, h: int = Depends(H), db: Session = Depends(get_db)):
     """Every slot for one day, with the patient attached to held or booked ones."""
     d = day or services.now().date()
     start = datetime.combine(d, datetime.min.time())
     slots = list(
         db.scalars(
             select(Slot)
-            .where(Slot.starts_at >= start, Slot.starts_at < start + timedelta(days=1))
+            .where(Slot.hospital_id == h, Slot.starts_at >= start, Slot.starts_at < start + timedelta(days=1))
             .order_by(Slot.doctor, Slot.starts_at)
         )
     )
@@ -299,6 +316,8 @@ def schedule(day: date | None = None, db: Session = Depends(get_db)):
                 case_id=c.id if c else None,
                 patient=(c.patient.name or c.patient.phone) if c else None,
                 urgency=c.urgency if c else None,
+                patient_reply=c.patient_reply if c else None,
+                attendance=c.attendance if c else None,
             )
         )
     return out
@@ -306,29 +325,40 @@ def schedule(day: date | None = None, db: Session = Depends(get_db)):
 
 # ---------- Getting patients to hospital ----------
 
-@app.post("/api/cases/{case_id}/location", response_model=LocationOut, dependencies=STAFF)
-def share_location(case_id: int, body: LocationIn, db: Session = Depends(get_db)):
+def _own_dispatch(db: Session, dispatch_id: int, h: int):
+    d = db.get(Dispatch, dispatch_id)
+    if d is None:
+        raise HTTPException(404, "Dispatch not found.")
+    tenancy.own_case(db, d.case_id, h)
+
+@app.post("/api/cases/{case_id}/location", response_model=LocationOut)
+def share_location(case_id: int, body: LocationIn, h: int = Depends(H), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, h)
     return dispatch.set_location(db, case_id, body.lat, body.lng, body.label, body.source)
 
 
-@app.get("/api/cases/{case_id}/transport", response_model=TransportOut, dependencies=STAFF)
-def transport_options(case_id: int, db: Session = Depends(get_db)):
+@app.get("/api/cases/{case_id}/transport", response_model=TransportOut)
+def transport_options(case_id: int, h: int = Depends(H), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, h)
     """Suggested government hospital and nearest free responder. Staff decide."""
     return dispatch.options(db, case_id)
 
 
 @app.post("/api/cases/{case_id}/dispatch", response_model=DispatchOut, status_code=201)
 def send_responder(case_id: int, body: DispatchIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, tenancy.hid(who))
     return dispatch.send(db, case_id, acting(who, body.staff), body.responder_id, body.hospital_id, body.note)
 
 
 @app.post("/api/dispatches/{dispatch_id}/status", response_model=DispatchOut)
 def dispatch_status(dispatch_id: int, body: DispatchStatusIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    _own_dispatch(db, dispatch_id, tenancy.hid(who))
     return dispatch.update_status(db, dispatch_id, acting(who, body.staff), body.status, body.note)
 
 
-@app.get("/api/dispatches/{dispatch_id}/track", response_model=TrackOut, dependencies=STAFF)
-def track_dispatch(dispatch_id: int, db: Session = Depends(get_db)):
+@app.get("/api/dispatches/{dispatch_id}/track", response_model=TrackOut)
+def track_dispatch(dispatch_id: int, h: int = Depends(H), db: Session = Depends(get_db)):
+    _own_dispatch(db, dispatch_id, h)
     """Where the responder is now, and how far from the patient and the hospital."""
     return dispatch.track(db, dispatch_id)
 
@@ -372,18 +402,23 @@ def prices():
             "visit_fee_pkr": settings.visit_fee_pkr}
 
 
-@app.get("/api/cases/{case_id}/charges", response_model=list[ChargeOut], dependencies=STAFF)
-def case_charges(case_id: int, db: Session = Depends(get_db)):
+@app.get("/api/cases/{case_id}/charges", response_model=list[ChargeOut])
+def case_charges(case_id: int, h: int = Depends(H), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, h)
     return billing.for_case(db, case_id)
 
 
 @app.post("/api/cases/{case_id}/charges", response_model=ChargeOut, status_code=201)
 def add_visit_fee(case_id: int, body: VisitChargeIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    tenancy.own_case(db, case_id, tenancy.hid(who))
     return billing.add_visit_charge(db, case_id, acting(who, body.staff), body.amount_pkr, body.note)
 
 
 @app.post("/api/charges/{charge_id}/settle", response_model=ChargeOut)
 def settle_charge(charge_id: int, body: SettleIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    ch = db.get(Charge, charge_id)
+    if ch is not None:
+        tenancy.own_case(db, ch.case_id, tenancy.hid(who))
     return billing.settle(db, charge_id, acting(who, body.staff), body.status, body.method, body.note)
 
 
@@ -452,27 +487,27 @@ def create_lead(body: LeadIn, db: Session = Depends(get_db)):
 
 # ---------- Dashboard ----------
 
-@app.get("/api/stats", response_model=StatsOut, dependencies=STAFF)
-def stats(db: Session = Depends(get_db)):
+@app.get("/api/stats", response_model=StatsOut)
+def stats(h: int = Depends(H), db: Session = Depends(get_db)):
     t = services.now()
     day_start = t.replace(hour=0, minute=0, second=0)
     day_end = t.replace(hour=23, minute=59, second=59)
-    pending = db.scalar(select(func.count()).where(Case.status == "pending_review"))
+    pending = db.scalar(select(func.count()).where(Case.hospital_id == h, Case.status == "pending_review"))
     urgent = db.scalar(
-        select(func.count()).where(Case.status == "pending_review", Case.urgency == "urgent")
+        select(func.count()).where(Case.hospital_id == h, Case.status == "pending_review", Case.urgency == "urgent")
     )
     callbacks = db.scalar(
-        select(func.count()).where(Case.needs_callback.is_(True), Case.called_back.is_(False))
+        select(func.count()).where(Case.hospital_id == h, Case.needs_callback.is_(True), Case.called_back.is_(False))
     )
     approved = db.scalar(
-        select(func.count()).where(Case.status == "approved", Case.reviewed_at >= day_start)
+        select(func.count()).where(Case.hospital_id == h, Case.status == "approved", Case.reviewed_at >= day_start)
     )
     open_today = db.scalar(
-        select(func.count()).where(Slot.status == "open", Slot.starts_at >= t, Slot.starts_at <= day_end)
+        select(func.count()).where(Slot.hospital_id == h, Slot.status == "open", Slot.starts_at >= t, Slot.starts_at <= day_end)
     )
     reviewed = list(
         db.execute(
-            select(Case.created_at, Case.reviewed_at).where(Case.reviewed_at.is_not(None)).limit(200)
+            select(Case.created_at, Case.reviewed_at).where(Case.hospital_id == h, Case.reviewed_at.is_not(None)).limit(200)
         )
     )
     avg = (
@@ -498,9 +533,10 @@ def stats(db: Session = Depends(get_db)):
     )
 
 
-@app.get("/api/audit", response_model=list[AuditOut], dependencies=STAFF)
-def audit_log(case_id: int | None = None, limit: int = Query(50, le=500), db: Session = Depends(get_db)):
-    q = select(AuditEvent).order_by(AuditEvent.at.desc(), AuditEvent.id.desc()).limit(limit)
+@app.get("/api/audit", response_model=list[AuditOut])
+def audit_log(case_id: int | None = None, limit: int = Query(50, le=500), h: int = Depends(H), db: Session = Depends(get_db)):
+    q = (select(AuditEvent).join(Case, Case.id == AuditEvent.case_id).where(Case.hospital_id == h)
+         .order_by(AuditEvent.at.desc(), AuditEvent.id.desc()).limit(limit))
     if case_id is not None:
         q = q.where(AuditEvent.case_id == case_id)
     return list(db.scalars(q))

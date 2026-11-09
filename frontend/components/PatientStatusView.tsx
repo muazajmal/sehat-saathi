@@ -13,6 +13,7 @@ import {
   slotTime,
   type PatientStatus,
   type PayMethod,
+  apiCall,
 } from "../lib/api";
 import { T } from "../lib/patientText";
 import { EmergencyBar, PatientHeader, useClinicName, usePatientLang } from "./PatientPortal";
@@ -171,6 +172,31 @@ export default function PatientStatusView() {
               <p className="p-slot ok" dir="ltr">
                 {slotTime(st.booked_slot.starts_at)} · {st.booked_slot.doctor}
               </p>
+            )}
+            {st.booked_slot && !st.attendance && new Date(st.booked_slot.starts_at + (st.booked_slot.starts_at.endsWith("Z") ? "" : "+05:00")) > new Date() && (
+              <div className="p-reply-row">
+                {st.patient_reply === "cancelled" ? (
+                  <p className="p-muted">{lang === "ur" ? "آپ نے یہ وقت منسوخ کر دیا ہے۔" : "You cancelled this visit. The time is free for someone else."}</p>
+                ) : st.patient_reply === "coming" ? (
+                  <p className="p-ok">✓ {lang === "ur" ? "شکریہ! ہم آپ کا انتظار کریں گے۔" : "Thank you! We'll expect you."}</p>
+                ) : (
+                  <>
+                    <button type="button" className="btn btn-primary" onClick={async () => {
+                      await apiCall(`/api/patient/reply?c=${c}&t=${encodeURIComponent(token)}&reply=coming`, { method: "POST" });
+                      load();
+                    }}>
+                      ✓ {lang === "ur" ? "میں آؤں گا/گی" : "I'll come"}
+                    </button>
+                    <button type="button" className="btn btn-quiet" onClick={async () => {
+                      if (!window.confirm(lang === "ur" ? "کیا آپ یہ وقت منسوخ کرنا چاہتے ہیں؟" : "Cancel this visit? The time will be given to someone else.")) return;
+                      await apiCall(`/api/patient/reply?c=${c}&t=${encodeURIComponent(token)}&reply=cancelled`, { method: "POST" });
+                      load();
+                    }}>
+                      {lang === "ur" ? "منسوخ کریں" : "Cancel"}
+                    </button>
+                  </>
+                )}
+              </div>
             )}
             {st.held_slot && (
               <>

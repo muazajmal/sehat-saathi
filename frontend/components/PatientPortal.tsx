@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, ApiError, session, type Prices } from "../lib/api";
+import { api, apiCall, ApiError, session, type Prices } from "../lib/api";
 import { loadLang, myRequests, rememberRequest, saveLang, T, type MyRequest, type UiLang } from "../lib/patientText";
 import { composeMessage, EMPTY_QUICK, hasQuick, QT, quickPayload, type QuickState } from "../lib/quickText";
 import InstallApp from "./InstallApp";
@@ -98,6 +98,23 @@ export default function PatientPortal() {
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot: people never fill this in
   const [email, setEmail] = useState("");
+  const [tenants, setTenants] = useState<{ id: number; slug: string; name: string; city: string }[]>([]);
+  const [hospital, setHospital] = useState("");
+  // Which hospital: from the link (?h=slug), the last one used, or the main one.
+  useEffect(() => {
+    const fromLink = new URLSearchParams(window.location.search).get("h");
+    let saved = "";
+    try {
+      saved = localStorage.getItem("sehat.hospital") ?? "";
+    } catch {}
+    apiCall<{ id: number; slug: string; name: string; city: string }[]>("/api/tenants")
+      .then((list) => {
+        setTenants(list);
+        const pick = [fromLink, saved].find((x) => x && list.some((t) => t.slug === x)) ?? list[0]?.slug ?? "";
+        setHospital(pick);
+      })
+      .catch(() => {});
+  }, []);
   // Logged-in patients don't need to type their name and number again.
   useEffect(() => {
     const s = session.get();
@@ -130,7 +147,10 @@ export default function PatientPortal() {
     setError(null);
     try {
       const full = composeMessage(quick, lang, message);
-      const c = await api.intake(p, name.trim(), full, quickPayload(quick), email.trim());
+      try {
+        localStorage.setItem("sehat.hospital", hospital);
+      } catch {}
+      const c = await api.intake(p, name.trim(), full, quickPayload(quick), email.trim(), hospital);
       rememberRequest({ c: c.id, t: c.access_token, at: c.created_at, preview: full.slice(0, 60) });
       router.push(`/patient/status?c=${c.id}&t=${encodeURIComponent(c.access_token)}`);
     } catch (err) {
@@ -146,6 +166,16 @@ export default function PatientPortal() {
 
       <form className="p-card" onSubmit={submit}>
         <h1>{t.formTitle}</h1>
+        {tenants.length > 1 && (
+          <>
+            <label htmlFor="p-hosp">{lang === "ur" ? "کس ہسپتال کو بھیجیں؟" : "Which hospital?"}</label>
+            <select id="p-hosp" className="p-select" value={hospital} onChange={(e) => setHospital(e.target.value)}>
+              {tenants.map((t) => (
+                <option key={t.slug} value={t.slug}>{t.name} · {t.city}</option>
+              ))}
+            </select>
+          </>
+        )}
         <QuickPick lang={lang} value={quick} onChange={setQuick} />
         <h2 className="qp-or">{QT[lang].orWrite}</h2>
         <p className="p-muted">{t.formHint}</p>

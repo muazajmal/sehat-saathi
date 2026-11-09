@@ -21,7 +21,7 @@ from .db import get_db
 from .models import Account
 
 TOKEN_DAYS = 7
-ROLES = ("admin", "doctor", "patient")
+ROLES = ("owner", "admin", "doctor", "patient")
 STAFF_ROLES = ("admin", "doctor")
 
 
@@ -119,6 +119,7 @@ def staff_account(db: Session, authorization: str | None, x_staff_key: str | Non
     or, only when OPEN_DESK=1, nobody (demo mode). Returns the account when there is one."""
     acc = account_from_header(db, authorization)
     if acc and acc.role in STAFF_ROLES:
+        hospital_open(db, acc)
         return acc
     if settings.staff_key and x_staff_key and secrets.compare_digest(x_staff_key, settings.staff_key):
         return None
@@ -127,6 +128,23 @@ def staff_account(db: Session, authorization: str | None, x_staff_key: str | Non
     if acc and acc.role == "patient":
         raise HTTPException(403, "This is the hospital desk. Patients can see their requests on the patient app.")
     raise HTTPException(401, "Please log in as hospital staff.")
+
+
+def hospital_open(db: Session, acc: Account):
+    """Staff of a hospital that isn't approved (or is suspended) can't use the desk."""
+    from .models import Tenant
+
+    t = db.get(Tenant, acc.hospital_id or 1)
+    if t is None or t.status != "active":
+        msg = ("Your hospital is waiting for approval. You'll be able to log in once it's approved."
+               if t is not None and t.status == "pending" else "This hospital's account is paused. Contact Sehat Saathi.")
+        raise HTTPException(403, msg)
+
+
+def owner_only(acc: Account = Depends(current_account)) -> Account:
+    if acc.role != "owner":
+        raise HTTPException(403, "Only the Sehat Saathi owner can do this.")
+    return acc
 
 
 def find(db: Session, phone: str) -> Account | None:

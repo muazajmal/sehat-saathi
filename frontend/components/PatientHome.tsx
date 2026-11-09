@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, ApiError, type MyCase } from "../lib/api";
+import { api, apiCall, ApiError, type MyCase } from "../lib/api";
 import { cx, type InboxItem } from "../lib/community";
 import { T } from "../lib/patientText";
 import { useSession } from "../lib/useSession";
@@ -144,6 +144,28 @@ export default function PatientHome() {
         >
           {h.logout}
         </button>
+      </p>
+      <p className="p-foot">
+        <button
+          type="button"
+          className="link-btn"
+          onClick={async () => {
+            const pw = window.prompt(lang === "ur"
+              ? "اکاؤنٹ اور ڈیٹا مستقل طور پر حذف ہو جائے گا۔ تصدیق کے لیے اپنا پاس ورڈ لکھیں:"
+              : "This permanently deletes your account and personal data. Type your password to confirm:");
+            if (!pw) return;
+            try {
+              await apiCall("/api/me/delete", { method: "POST", body: JSON.stringify({ password: pw }) });
+              logout();
+              router.push("/app");
+            } catch (e) {
+              window.alert(e instanceof Error ? e.message : String(e));
+            }
+          }}
+        >
+          {lang === "ur" ? "میرا اکاؤنٹ اور ڈیٹا حذف کریں" : "Delete my account and data"}
+        </button>{" "}
+        · <Link href="/privacy">{lang === "ur" ? "پرائیویسی" : "Privacy"}</Link>
       </p>
       <p className="p-foot">{t.notDiagnosis}</p>
     </main>

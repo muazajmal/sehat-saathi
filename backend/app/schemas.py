@@ -32,6 +32,8 @@ class IntakeIn(BaseModel):
     quick: QuickIn | None = None
     # Optional: for a "your appointment is confirmed" email.
     email: str = Field(default="", max_length=200)
+    # Which hospital (its slug or id); empty = the main one.
+    hospital: str = Field(default="", max_length=60)
 
 
 class SlotOut(BaseModel):
@@ -147,6 +149,8 @@ class ScheduleSlot(BaseModel):
     case_id: int | None = None
     patient: str | None = None
     urgency: str | None = None
+    patient_reply: str | None = None
+    attendance: str | None = None
 
 
 # ---------- Getting patients to hospital ----------
@@ -358,6 +362,8 @@ class PatientStatusOut(BaseModel):
     trip: PatientTrip | None
     first_aid: list[str] = []
     email_to: str | None = None
+    patient_reply: str | None = None
+    attendance: str | None = None
     charges: list[PatientCharge] = []
     created_at: datetime
 

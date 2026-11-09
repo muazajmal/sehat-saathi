@@ -2356,3 +2356,66 @@ a.sslot:hover {
 .team-list li.rise { flex-wrap: wrap; }
 .team-list li.rise .who { flex: 1 1 100%; }
 .team-list li.rise .acts { margin-left: auto; }
+
+/* Schedule: patient replies and attendance */
+.reply-ok { font-size: 0.6875rem; color: var(--mint); font-weight: 700; white-space: nowrap; }
+.sched-col li .att { display: flex; gap: 6px; margin: 4px 0 8px; }
+.sched-col li .att button {
+  flex: 1; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); border-radius: 10px;
+  padding: 5px 8px; font: inherit; font-size: 0.75rem; cursor: pointer;
+}
+.att-done { font-size: 0.75rem; font-weight: 700; }
+.att-done.arrived { color: var(--mint); }
+.att-done.no_show { color: var(--urgent); }
+
+/* Reports */
+.rep-head { display: flex; gap: 12px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
+.rep-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi { padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--paper); display: grid; gap: 2px; }
+.kpi b { font-size: 1.625rem; letter-spacing: -0.02em; }
+.kpi span { color: var(--muted); font-size: 0.8125rem; }
+.kpi.urgent b { color: var(--urgent); }
+.rep-bars { width: 100%; height: 150px; display: block; }
+.rep-bars .bar-a { fill: var(--mint); opacity: 0.75; }
+.rep-bars .bar-b { fill: var(--urgent); }
+.rep-axis { display: flex; justify-content: space-between; color: var(--faint); font-size: 0.75rem; }
+.hbar { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hbar li { display: grid; grid-template-columns: 9.5rem 1fr 2.5rem; gap: 8px; align-items: center; font-size: 0.875rem; }
+.hb-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-track { height: 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.hb-track span { display: block; height: 100%; background: var(--mint); border-radius: 6px; }
+.hbar b { text-align: right; }
+.rep-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.rep-table th, .rep-table td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); }
+.rep-table th { color: var(--muted); font-weight: 600; }
+.rep-table td + td, .rep-table th + th { text-align: right; }
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff !important; color: #111 !important; }
+  .rail, .no-print, .rail-link, .staff-card, nav { display: none !important; }
+  .app, .app-main { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .reports { padding: 0 !important; max-width: none !important; }
+  .glass, .kpi, .team-card { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important;
+    backdrop-filter: none !important; break-inside: avoid; color: #111 !important; }
+  .muted, .kpi span, .rep-axis, .rep-table th { color: #555 !important; }
+  .rep-bars .bar-a, .hb-track span { fill: #0b8f78; background: #0b8f78 !important; opacity: 1; }
+  .hb-track { background: #e8efed !important; }
+  .kpi.urgent b { color: #c0293a !important; }
+}
+
+/* Owner panel */
+.owner { max-width: 980px; margin: 0 auto; padding: 20px 16px; display: grid; gap: 12px; }
+.owner-head { display: flex; gap: 12px; align-items: center; }
+.owner-head .muted { margin-left: auto; }
+.owner-list li.pending { border-color: #f5b14c; }
+.owner-list li.suspended { opacity: 0.6; }
+
+/* Legal pages */
+.legal { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; line-height: 1.65; }
+.legal h1 { margin: 16px 0 4px; }
+.legal h2 { font-size: 1.125rem; margin: 22px 0 6px; }
+.legal ul { padding-left: 20px; }
+.legal a { color: var(--mint); }

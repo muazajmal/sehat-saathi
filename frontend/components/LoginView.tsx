@@ -31,7 +31,7 @@ export default function LoginView() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const home = (role: string) => (role === "patient" ? "/patient/home" : "/desk");
+  const home = (role: string) => (role === "patient" ? "/patient/home" : role === "owner" ? "/owner" : "/desk");
 
   // Already logged in on this device: go straight to the right place.
   useEffect(() => {
@@ -124,6 +124,12 @@ export default function LoginView() {
           {busy ? "Please wait…" : isSignup ? "Create account" : "Log in"}
         </button>
 
+        {!isSignup && (
+          <p className="muted" style={{ margin: 0 }}>
+            <Link href="/forgot">Forgot password?</Link>
+            {door === "staff" && <> · <Link href="/hospitals/join">Add your hospital</Link></>}
+          </p>
+        )}
         {door === "patient" && (
           <p className="muted">
             {isSignup ? "Already have an account? " : "New here? "}

@@ -95,6 +95,18 @@ Live: website https://sehat-saathi-eta.vercel.app, API https://sehat-saathi-api.
 project's own Vercel addresses (`CORS_ORIGIN_REGEX`). Urgent cases are also sent to an n8n webhook
 (`N8N_ESCALATION_WEBHOOK`) that logs them to the "Sehat Saathi - Urgent Alerts" data table.
 
+## Ready to sell to hospitals
+
+| | What it does | Where |
+| --- | --- | --- |
+| **Multi-hospital** | Each hospital has its own desk, doctors, slots, patients, reports, alerts and blood requests; one hospital can never see another's. Hospitals apply at `/hospitals/join`; the owner approves or pauses them at `/owner` (the first visit sets up the owner account, then it's closed). Patients pick a hospital, or use its link `/patient?h=<slug>`. The original clinic is hospital #1, so existing data stays with it. | `/hospitals/join`, `/owner` |
+| **Reports** | Requests per day, urgent share, median time to a doctor's decision, bookings, no-show rate, patient confirmations and cancellations, top complaints, channels, languages, busiest hours, per-doctor numbers, areas. CSV download without names or numbers, and a printable monthly report (PDF). | `/desk/reports` |
+| **Fewer no-shows** | Day-before and 2-hours-before reminders (app, phone notification, Gmail). The patient taps "I'll come" or "Cancel" (cancelling frees the slot). Staff mark Arrived / No-show on the schedule; reports show the no-show rate. | `/desk/schedule`, patient status page |
+| **Trust basics** | Privacy policy and terms, password reset by email (same answer whether or not a number exists), "Delete my account and data", limits on wrong passwords, sign-ups, requests and resets. | `/privacy`, `/terms`, `/forgot` |
+
+New database columns are added on start-up by `app/tenancy.py` (safe to run any number of times; tested by upgrading
+a Postgres database made by the previous version).
+
 ## Community features
 
 | Feature | Who | Where |

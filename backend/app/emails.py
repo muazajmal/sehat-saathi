@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from . import patient
 from .config import settings
 from .db import get_db
-from .models import Case, CaseAccess, ContactEmail, EmailSent, Patient
+from .models import Case, CaseAccess, ContactEmail, EmailJob, EmailSent, Patient
 from .services import now
 
 log = logging.getLogger(__name__)
@@ -57,27 +57,77 @@ def masked(email: str | None) -> str | None:
     return (user[:2] + "•" * max(1, len(user) - 2)) + "@" + dom
 
 
-def trigger(db: Session, case: Case, kind: str):
-    """After a doctor confirms or declines: ask n8n to send the email (if the patient gave one)."""
-    if not email_for(db, case.patient.phone):
-        return
-    hook = os.getenv("N8N_EMAIL_WEBHOOK", DEFAULT_HOOK)
-    if not hook or hook == "off":
-        return
+def queue(db: Session, key: str, to: str, subject: str, body: str) -> bool:
+    """Save an email and ask n8n to send it with Gmail. Each `key` is only ever emailed once."""
+    job = EmailJob(token=secrets.token_urlsafe(24), key=key[:100], to=to, subject=subject[:240], html=body, created_at=now())
+    db.add(job)
     try:
-        httpx.post(hook, json={"case_id": case.id, "token": patient.issue_token(db, case.id), "kind": kind}, timeout=6)
-    except Exception as e:
-        log.warning("booking email hook failed: %s", e)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return False
+    hook = os.getenv("N8N_EMAIL_WEBHOOK", DEFAULT_HOOK)
+    if hook and hook != "off":
+        try:
+            httpx.post(hook, json={"job_id": job.id, "token": job.token, "kind": "job",
+                                   # older version of the n8n workflow reads these:
+                                   "case_id": job.id, "job": True}, timeout=6)
+        except Exception as e:
+            log.warning("email hook failed: %s", e)
+    return True
+
+
+def trigger(db: Session, case: Case, kind: str):
+    """After a doctor confirms or declines, or before a visit: email the patient (if they gave an email)."""
+    to = email_for(db, case.patient.phone)
+    if not to:
+        return
+    t = patient.issue_token(db, case.id)
+    subject, body = build(db, case, kind, patient.status_link(case.id, t))
+    queue(db, f"case:{case.id}:{kind}", to, subject, body)
 
 
 def when(dt) -> str:
     return dt.strftime("%A, %d %B %Y at %I:%M %p").replace(" 0", " ").replace("AM", "am").replace("PM", "pm")
 
 
-def build(case: Case, kind: str, link: str) -> tuple[str, str]:
+def shell(head: str, en: str, ur: str, button: tuple[str, str] | None, footer: str) -> str:
+    e = html.escape
+    btn = (f'<p style="margin:18px 0"><a href="{e(button[1])}" style="background:#0b8f78;color:#ffffff;text-decoration:none;'
+           f'padding:12px 20px;border-radius:999px;font-weight:bold;display:inline-block">{e(button[0])}</a></p>') if button else ""
+    return f"""<!doctype html><html><body style="margin:0;background:#eef4f2;font-family:Arial,Helvetica,sans-serif;color:#0d1f1c">
+<div style="max-width:560px;margin:0 auto;padding:20px 12px">
+ <div style="background:#05302a;color:#eaf5f2;border-radius:16px 16px 0 0;padding:18px 22px">
+  <div style="font-size:18px;font-weight:bold">Sehat Saathi <span style="color:#5fe3c4">· صحت ساتھی</span></div>
+  <div style="font-size:22px;font-weight:bold;margin-top:8px">{head}</div>
+ </div>
+ <div style="background:#ffffff;border-radius:0 0 16px 16px;padding:18px 22px;line-height:1.55;font-size:15px">
+  {en}{btn}
+  <hr style="border:0;border-top:1px solid #dfe9e6;margin:18px 0">
+  <div dir="rtl" style="text-align:right;font-size:16px;line-height:1.9">{ur}</div>
+  <hr style="border:0;border-top:1px solid #dfe9e6;margin:18px 0">
+  <p style="font-size:13px;color:#5c7470;margin:0">In an emergency, call <b>1122</b>. Sehat Saathi does not diagnose; your doctor decides.<br>
+  ایمرجنسی میں 1122 پر کال کریں۔</p>
+ </div>
+ <p style="font-size:12px;color:#7a8f8b;text-align:center">{footer}</p>
+</div></body></html>"""
+
+
+def reset_email(name: str, link: str) -> tuple[str, str]:
+    e = html.escape
+    en = (f"<p>Assalam-o-Alaikum{', ' + e(name) if name else ''},</p><p>Someone asked to reset the password for your "
+          "Sehat Saathi account. If it was you, use the button below within 30 minutes. If not, you can ignore this email.</p>")
+    ur = "<p>آپ کے صحت ساتھی اکاؤنٹ کا پاس ورڈ بدلنے کی درخواست آئی ہے۔ اگر یہ آپ تھے تو 30 منٹ کے اندر نیچے والا بٹن استعمال کریں۔ ورنہ اس ای میل کو نظر انداز کریں۔</p>"
+    return "Reset your Sehat Saathi password", shell("Reset your password", en, ur, ("Choose a new password", link),
+                                                     "You got this because a password reset was asked for on Sehat Saathi.")
+
+
+def build(db: Session, case: Case, kind: str, link: str) -> tuple[str, str]:
+    from . import tenancy
+
     e = html.escape
     name = e(case.patient.name or "")
-    clinic = e(settings.clinic_name)
+    clinic = e(tenancy.name_of(db, case.hospital_id or 1))
     slot = case.proposed_slot
     hello_en = f"Assalam-o-Alaikum{', ' + name if name else ''},"
     hello_ur = f"السلام علیکم{('، ' + name) if name else ''}،"
@@ -94,6 +144,16 @@ def build(case: Case, kind: str, link: str) -> tuple[str, str]:
               f"<p><b>{e(slot.doctor)}</b><br>{e(when(slot.starts_at))}<br>{clinic}</p>"
               "<p>براہ کرم 10 منٹ پہلے آئیں اور شناختی کارڈ، پرانی رپورٹس یا دوائیں ساتھ لائیں۔</p>")
         head = "Appointment confirmed ✓"
+    elif kind in ("reminder-day", "reminder-soon"):
+        soon = kind == "reminder-soon"
+        subject = f"{'Soon' if soon else 'Tomorrow'}: your appointment with {slot.doctor} at {slot.starts_at:%I:%M %p}".replace(" 0", " ")
+        en = (f"<p>{hello_en}</p><p>A reminder: you have an appointment with <b>{e(slot.doctor)}</b> on "
+              f"<b>{e(when(slot.starts_at))}</b> at {clinic}.</p>"
+              "<p>Please open your request and tap <b>I'll come</b>, or <b>Cancel</b> if you can't make it, "
+              "so someone else can have your time.</p>")
+        ur = (f"<p>{hello_ur}</p><p>یاد دہانی: آپ کی <b>{e(slot.doctor)}</b> کے ساتھ اپائنٹمنٹ ہے: {e(when(slot.starts_at))}، {clinic}۔</p>"
+              "<p>براہ کرم اپنی درخواست کھول کر <b>میں آؤں گا/گی</b> دبائیں، یا نہ آ سکیں تو <b>منسوخ</b> کریں تاکہ کسی اور کو وقت مل سکے۔</p>")
+        head = "Appointment soon" if soon else "Appointment tomorrow"
     else:
         subject = f"About your request to {settings.clinic_name}"
         note = e(case.review_note or "")
@@ -103,29 +163,22 @@ def build(case: Case, kind: str, link: str) -> tuple[str, str]:
         ur = (f"<p>{hello_ur}</p><p>ڈاکٹر نے آپ کی درخواست دیکھی، لیکن اس بار وقت طے نہیں ہو سکا۔</p>"
               "<p>جواب پڑھنے یا نئی درخواست بھیجنے کے لیے اپنی درخواست کھولیں۔</p>")
         head = "About your request"
-    body = f"""<!doctype html><html><body style="margin:0;background:#eef4f2;font-family:Arial,Helvetica,sans-serif;color:#0d1f1c">
-<div style="max-width:560px;margin:0 auto;padding:20px 12px">
- <div style="background:#05302a;color:#eaf5f2;border-radius:16px 16px 0 0;padding:18px 22px">
-  <div style="font-size:18px;font-weight:bold">Sehat Saathi <span style="color:#5fe3c4">· صحت ساتھی</span></div>
-  <div style="font-size:22px;font-weight:bold;margin-top:8px">{head}</div>
- </div>
- <div style="background:#ffffff;border-radius:0 0 16px 16px;padding:18px 22px;line-height:1.55;font-size:15px">
-  {en}
-  <p style="margin:18px 0"><a href="{e(link)}" style="background:#0b8f78;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:bold;display:inline-block">Open my request</a></p>
-  <hr style="border:0;border-top:1px solid #dfe9e6;margin:18px 0">
-  <div dir="rtl" style="text-align:right;font-size:16px;line-height:1.9">{ur}</div>
-  <hr style="border:0;border-top:1px solid #dfe9e6;margin:18px 0">
-  <p style="font-size:13px;color:#5c7470;margin:0">In an emergency, call <b>1122</b>. Sehat Saathi does not diagnose; your doctor decides.<br>
-  ایمرجنسی میں 1122 پر کال کریں۔</p>
- </div>
- <p style="font-size:12px;color:#7a8f8b;text-align:center">You got this because you gave this email when asking {clinic} for help.</p>
-</div></body></html>"""
+    body = shell(head, en, ur, ("Open my request", link), f"You got this because you gave this email when asking {clinic} for help.")
     return subject, body
 
 
 @router.get("/email-job")
-def email_job(c: int, t: str, kind: str, db: Session = Depends(get_db)):
-    """For the n8n booking-email workflow only. Empty unless there is exactly one email to send."""
+def email_job(t: str, j: int | None = None, c: int | None = None, kind: str = "", db: Session = Depends(get_db)):
+    """For the n8n Gmail workflow only. Empty unless there is exactly one email to send, given out once."""
+    if j is not None:
+        job = db.get(EmailJob, j)
+        if job is None or job.sent_at is not None or not secrets.compare_digest(job.token, t):
+            return {}
+        job.sent_at = now()
+        db.commit()
+        return {"to": job.to, "subject": job.subject, "html": job.html}
+    if c is None:
+        return {}
     access = db.scalar(select(CaseAccess).where(CaseAccess.case_id == c))
     case = db.get(Case, c)
     if case is None or access is None or not secrets.compare_digest(access.token, t):
@@ -142,5 +195,5 @@ def email_job(c: int, t: str, kind: str, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         return {}
-    subject, body = build(case, kind, patient.status_link(case.id, t))
+    subject, body = build(db, case, kind, patient.status_link(case.id, t))
     return {"to": to, "subject": subject, "html": body}

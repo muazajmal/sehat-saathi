@@ -73,6 +73,8 @@ export interface PatientStatus {
   charges: { id: number; kind: string; description: string; amount_pkr: number; status: "due" | "paid" | "waived"; method: PayMethod | null }[];
   first_aid: string[];
   email_to?: string | null;
+  patient_reply?: "coming" | "cancelled" | null;
+  attendance?: "arrived" | "no_show" | null;
   created_at: string;
 }
 
@@ -306,6 +308,8 @@ export interface ScheduleSlot {
   case_id: number | null;
   patient: string | null;
   urgency: Urgency | null;
+  patient_reply?: "coming" | "cancelled" | null;
+  attendance?: "arrived" | "no_show" | null;
 }
 
 export class ApiError extends Error {
@@ -332,7 +336,7 @@ export const staffCode = {
 
 // ---------- Logins (hospital admin, doctor, patient) ----------
 
-export type Role = "admin" | "doctor" | "patient";
+export type Role = "owner" | "admin" | "doctor" | "patient";
 
 export interface Account {
   id: number;
@@ -444,8 +448,11 @@ export const api = {
   lead: (body: { name: string; clinic: string; city: string; phone: string; size: string }) =>
     call<{ id: number }>("/api/leads", { method: "POST", body: JSON.stringify(body) }),
   audit: (caseId: number) => call<AuditEvent[]>(`/api/audit?case_id=${caseId}`),
-  intake: (phone: string, name: string, message: string, quick?: object, email?: string) =>
-    call<IntakeResult>("/api/intake", { method: "POST", body: JSON.stringify({ phone, name, message, channel: "web", quick, email: email || "" }) }),
+  intake: (phone: string, name: string, message: string, quick?: object, email?: string, hospital?: string) =>
+    call<IntakeResult>("/api/intake", {
+      method: "POST",
+      body: JSON.stringify({ phone, name, message, channel: "web", quick, email: email || "", hospital: hospital || "" }),
+    }),
   transcribe: (audio_b64: string, ui_lang: "ur" | "en") =>
     call<{ text: string }>("/api/transcribe", { method: "POST", body: JSON.stringify({ audio_b64, mime: "audio/wav", ui_lang }) }),
   patientStatus: (c: number, t: string) =>

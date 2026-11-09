@@ -31,9 +31,10 @@ def _end_of_today() -> datetime:
     return t.replace(hour=23, minute=59, second=59)
 
 
-def find_slot(db: Session, urgency: str, specialty: str) -> Slot | None:
-    """Earliest open slot that fits the urgency. Prefers the right specialty."""
-    q = select(Slot).where(Slot.status == "open", Slot.starts_at >= now()).order_by(Slot.starts_at)
+def find_slot(db: Session, urgency: str, specialty: str, hospital_id: int = 1) -> Slot | None:
+    """Earliest open slot at this hospital that fits the urgency. Prefers the right specialty."""
+    q = (select(Slot).where(Slot.status == "open", Slot.starts_at >= now(), Slot.hospital_id == hospital_id)
+         .order_by(Slot.starts_at))
     if urgency in ("urgent", "today"):
         q = q.where(Slot.starts_at <= _end_of_today())
     slots = list(db.scalars(q))
@@ -58,7 +59,7 @@ def case_payload(case: Case) -> dict:
 
 
 def create_intake(db: Session, phone: str, name: str, message: str, channel: str,
-                  quick_answers: dict | None = None) -> Case:
+                  quick_answers: dict | None = None, hospital_id: int = 1) -> Case:
     patient = db.scalar(select(Patient).where(Patient.phone == phone))
     if patient is None:
         patient = Patient(phone=phone, name=name or "", created_at=now())
@@ -87,8 +88,9 @@ def create_intake(db: Session, phone: str, name: str, message: str, channel: str
         confidence=result.confidence,
         needs_callback=result.urgency == "urgent",
         created_at=now(),
+        hospital_id=hospital_id,
     )
-    slot = find_slot(db, result.urgency, result.specialty)
+    slot = find_slot(db, result.urgency, result.specialty, hospital_id)
     if slot:
         slot.status = "held"
         case.proposed_slot_id = slot.id
@@ -129,6 +131,8 @@ def approve(db: Session, case_id: int, staff: str, slot_id: int | None, note: st
 
     if slot_id and slot_id != case.proposed_slot_id:
         new_slot = db.get(Slot, slot_id)
+        if new_slot is not None and (new_slot.hospital_id or 1) != (case.hospital_id or 1):
+            raise HTTPException(422, "That slot belongs to another hospital.")
         if new_slot is None or new_slot.status != "open":
             raise HTTPException(409, "That slot is no longer open. Pick another.")
         if case.proposed_slot:

@@ -20,6 +20,12 @@ def issue_token(db: Session, case_id: int) -> str:
     return access.token
 
 
+def _hospital(db: Session, case) -> str:
+    from . import tenancy
+
+    return tenancy.name_of(db, case.hospital_id or 1)
+
+
 def _email_to(db: Session, phone: str) -> str | None:
     from . import emails  # imported here: emails also imports this module
 
@@ -64,7 +70,7 @@ def status(db: Session, case_id: int, token: str) -> dict:
         }
     return {
         "case_id": case.id,
-        "clinic": settings.clinic_name,
+        "clinic": _hospital(db, case),
         "name": case.patient.name,
         "status": case.status,
         "urgency": case.urgency,
@@ -80,6 +86,8 @@ def status(db: Session, case_id: int, token: str) -> dict:
         "trip": trip,
         "first_aid": guides_for(case.red_flags or [], case.message),
         "email_to": _email_to(db, case.patient.phone),
+        "patient_reply": case.patient_reply,
+        "attendance": case.attendance,
         "charges": billing.patient_view(db, case),
         "created_at": case.created_at,
     }

@@ -141,6 +141,9 @@ export default function Welcome() {
       </div>
 
       <p className="welcome-foot">{t.foot}</p>
+      <p className="welcome-foot">
+        <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/hospitals/join">For hospitals</Link>
+      </p>
     </main>
   );
 }

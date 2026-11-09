@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AppShell, { useStaff } from "./AppShell";
-import { api, ApiError, toDate, type ScheduleSlot } from "../lib/api";
+import { api, apiCall, ApiError, toDate, type ScheduleSlot } from "../lib/api";
 
 function dayKey(offset: number) {
   // Clinic-local date (PKT) regardless of the viewer's timezone.
@@ -45,6 +45,15 @@ export default function Schedule() {
       setLoaded(true);
     }
   }, [offset]);
+
+  async function mark(caseId: number, value: "arrived" | "no_show") {
+    try {
+      await apiCall(`/api/cases/${caseId}/attendance`, { method: "POST", body: JSON.stringify({ value }) });
+      await load();
+    } catch {
+      /* the next refresh shows the current state */
+    }
+  }
 
   useEffect(() => {
     load();
@@ -122,6 +131,7 @@ export default function Schedule() {
                       {s.status === "open" ? "Free" : s.patient ?? "Reserved"}
                     </span>
                     {s.urgency && <span className={`tag tag-${s.urgency}`} aria-label={s.urgency} style={{ padding: "2px 6px" }} />}
+                    {s.patient_reply === "coming" && !s.attendance && <span className="reply-ok" title="Patient said they'll come">✓ coming</span>}
                   </>
                 );
                 return (
@@ -132,6 +142,18 @@ export default function Schedule() {
                       </Link>
                     ) : (
                       <div className={`sslot s-${s.status}`}>{body}</div>
+                    )}
+                    {s.status === "booked" && s.case_id && offset === 0 && (
+                      <div className="att">
+                        {s.attendance ? (
+                          <span className={`att-done ${s.attendance}`}>{s.attendance === "arrived" ? "✓ Arrived" : "✕ No-show"}</span>
+                        ) : (
+                          <>
+                            <button type="button" onClick={() => mark(s.case_id!, "arrived")}>Arrived</button>
+                            <button type="button" onClick={() => mark(s.case_id!, "no_show")}>No-show</button>
+                          </>
+                        )}
+                      </div>
                     )}
                   </li>
                 );

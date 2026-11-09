@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import ai, areas, auth, inbox as notify, services, transport
+from . import ai, areas, auth, inbox as notify, services, tenancy, transport
 from .config import settings
 from .db import get_db
 from .models import (Account, AreaAlert, BloodAsk, BloodRequest, Case, CaseLocation, Checkin, DoseLog, Donor, Elder,
@@ -24,6 +24,17 @@ router = APIRouter(prefix="/api")
 def staff(authorization: str | None = Header(default=None), x_staff_key: str | None = Header(default=None),
           db: Session = Depends(get_db)):
     return auth.staff_account(db, authorization, x_staff_key)
+
+
+def H(who=Depends(staff)) -> int:
+    return tenancy.hid(who)
+
+
+def own_alert(db: Session, alert_id: int, h: int) -> AreaAlert:
+    a = db.get(AreaAlert, alert_id)
+    if a is None or (a.hospital_id or 1) != h:
+        raise HTTPException(404, "No such alert.")
+    return a
 
 
 def staff_name(who) -> str:
@@ -110,34 +121,35 @@ def alert_out(a: AreaAlert) -> dict:
             "group_ur": areas.GROUPS[a.group]["ur"], "level": a.level, "cases_week": a.cases_week,
             "baseline_week": a.baseline_week, "title_en": a.title_en, "body_en": a.body_en, "title_ur": a.title_ur,
             "body_ur": a.body_ur, "drafted_by": a.drafted_by, "status": a.status, "approved_by": a.approved_by,
+            "hospital_id": a.hospital_id or 1,
             "created_at": a.created_at, "published_at": a.published_at, "expires_at": a.expires_at}
 
 
 @router.get("/area-health")
-def area_health(_=Depends(staff), db: Session = Depends(get_db)):
+def area_health(h: int = Depends(H), db: Session = Depends(get_db)):
     """What the desk sees: rises found this week, cases per area, and alerts drafted or sent."""
-    found = areas.detect(db)
-    alerts = list(db.scalars(select(AreaAlert).where(AreaAlert.status != "closed").order_by(AreaAlert.created_at.desc())))
+    found = areas.detect(db, h)
+    alerts = list(db.scalars(select(AreaAlert).where(AreaAlert.status != "closed", AreaAlert.hospital_id == h)
+                             .order_by(AreaAlert.created_at.desc())))
     for f in found:
         f["alert"] = next((alert_out(a) for a in alerts if a.area == f["area"] and a.group == f["group"]), None)
-    return {"rises": found, "map": areas.map_points(db), "alerts": [alert_out(a) for a in alerts],
+    return {"rises": found, "map": areas.map_points(db, h), "alerts": [alert_out(a) for a in alerts],
             "areas": [{"name": n, "lat": la, "lng": ln} for n, la, ln in areas.AREAS]}
 
 
 @router.post("/area-health/draft")
-def draft_alert(area: str, group: str, _=Depends(staff), db: Session = Depends(get_db)):
-    f = next((x for x in areas.detect(db) if x["area"] == area and x["group"] == group), None)
+def draft_alert(area: str, group: str, h: int = Depends(H), db: Session = Depends(get_db)):
+    f = next((x for x in areas.detect(db, h) if x["area"] == area and x["group"] == group), None)
     if f is None:
         raise HTTPException(404, "No rise found for that area and illness.")
-    existing = db.scalar(select(AreaAlert).where(AreaAlert.area == area, AreaAlert.group == group, AreaAlert.status != "closed"))
-    return alert_out(existing or areas.draft(db, f))
+    existing = db.scalar(select(AreaAlert).where(AreaAlert.area == area, AreaAlert.group == group,
+                                                 AreaAlert.status != "closed", AreaAlert.hospital_id == h))
+    return alert_out(existing or areas.draft(db, f, h))
 
 
 @router.put("/area-health/alerts/{alert_id}")
-def edit_alert(alert_id: int, body: AlertEdit, _=Depends(staff), db: Session = Depends(get_db)):
-    a = db.get(AreaAlert, alert_id)
-    if a is None:
-        raise HTTPException(404, "No such alert.")
+def edit_alert(alert_id: int, body: AlertEdit, h: int = Depends(H), db: Session = Depends(get_db)):
+    a = own_alert(db, alert_id, h)
     for k, v in body.model_dump().items():
         setattr(a, k, v.strip())
     db.commit()
@@ -147,9 +159,7 @@ def edit_alert(alert_id: int, body: AlertEdit, _=Depends(staff), db: Session = D
 @router.post("/area-health/alerts/{alert_id}/publish")
 def publish_alert(alert_id: int, who=Depends(staff), db: Session = Depends(get_db)):
     """A doctor approves the wording; then it goes on the public alerts page and to people in that area."""
-    a = db.get(AreaAlert, alert_id)
-    if a is None:
-        raise HTTPException(404, "No such alert.")
+    a = own_alert(db, alert_id, tenancy.hid(who))
     if a.status == "draft":
         a.status, a.approved_by, a.published_at = "published", staff_name(who), now()
         a.expires_at = now() + timedelta(days=14)
@@ -159,7 +169,8 @@ def publish_alert(alert_id: int, who=Depends(staff), db: Session = Depends(get_d
         since = now() - timedelta(days=60)
         for phone, lat, lng in db.execute(select(Patient.phone, CaseLocation.lat, CaseLocation.lng)
                                           .join(Case, Case.patient_id == Patient.id)
-                                          .join(CaseLocation, CaseLocation.case_id == Case.id).where(Case.created_at >= since)):
+                                          .join(CaseLocation, CaseLocation.case_id == Case.id)
+                                          .where(Case.created_at >= since, Case.hospital_id == a.hospital_id)):
             if areas.nearest_area(lat, lng) == a.area:
                 phones.add(phone)
         for d in db.scalars(select(Donor).where(Donor.area == a.area)):
@@ -172,10 +183,8 @@ def publish_alert(alert_id: int, who=Depends(staff), db: Session = Depends(get_d
 
 
 @router.post("/area-health/alerts/{alert_id}/close")
-def close_alert(alert_id: int, _=Depends(staff), db: Session = Depends(get_db)):
-    a = db.get(AreaAlert, alert_id)
-    if a is None:
-        raise HTTPException(404, "No such alert.")
+def close_alert(alert_id: int, h: int = Depends(H), db: Session = Depends(get_db)):
+    a = own_alert(db, alert_id, h)
     a.status = "closed"
     db.commit()
     return alert_out(a)
@@ -186,7 +195,8 @@ def public_alerts(db: Session = Depends(get_db)):
     """Anyone: the hospital's current notices for each neighbourhood."""
     rows = db.scalars(select(AreaAlert).where(AreaAlert.status == "published", AreaAlert.expires_at > now())
                       .order_by(AreaAlert.published_at.desc()))
-    return [{k: v for k, v in alert_out(a).items() if k not in ("drafted_by",)} for a in rows]
+    return [{**{k: v for k, v in alert_out(a).items() if k not in ("drafted_by",)}, "hospital": tenancy.name_of(db, a.hospital_id)}
+            for a in rows]
 
 
 # ======================= Blood donor network =======================
@@ -271,10 +281,10 @@ def request_out(db: Session, r: BloodRequest) -> dict:
 
 
 @router.get("/donors/summary")
-def donors_summary(_=Depends(staff), db: Session = Depends(get_db)):
+def donors_summary(h: int = Depends(H), db: Session = Depends(get_db)):
     by = dict(db.execute(select(Donor.blood_group, func.count()).where(Donor.available.is_(True)).group_by(Donor.blood_group)).all())
     total = db.scalar(select(func.count()).select_from(Donor)) or 0
-    reqs = list(db.scalars(select(BloodRequest).order_by(BloodRequest.created_at.desc()).limit(20)))
+    reqs = list(db.scalars(select(BloodRequest).where(BloodRequest.hospital_id == h).order_by(BloodRequest.created_at.desc()).limit(20)))
     return {"total": total, "by_group": {g: by.get(g, 0) for g in GROUPS},
             "hospitals": [{"id": h.id, "name": h.short} for h in transport.HOSPITALS],
             "requests": [request_out(db, r) for r in reqs]}
@@ -288,7 +298,7 @@ def blood_request(body: BloodIn, who=Depends(staff), db: Session = Depends(get_d
     if h is None:
         raise HTTPException(422, "Unknown hospital.")
     r = BloodRequest(blood_group=body.blood_group, units=body.units, hospital=h.name, note=body.note.strip(),
-                     case_id=body.case_id, created_by=staff_name(who), created_at=now())
+                     case_id=body.case_id, created_by=staff_name(who), created_at=now(), hospital_id=tenancy.hid(who))
     db.add(r)
     db.flush()
     ok = CAN_RECEIVE_FROM[body.blood_group]
@@ -313,10 +323,10 @@ def blood_request(body: BloodIn, who=Depends(staff), db: Session = Depends(get_d
 
 
 @router.post("/blood-requests/{request_id}/status")
-def blood_request_status(request_id: int, status: Literal["open", "filled", "closed"], _=Depends(staff),
+def blood_request_status(request_id: int, status: Literal["open", "filled", "closed"], h: int = Depends(H),
                          db: Session = Depends(get_db)):
     r = db.get(BloodRequest, request_id)
-    if r is None:
+    if r is None or (r.hospital_id or 1) != h:
         raise HTTPException(404, "No such request.")
     r.status = status
     db.commit()
@@ -606,6 +616,9 @@ def tick(db: Session) -> dict:
     """Send what has fallen due. Safe to run any number of times: each message has a one-time key."""
     t, day = now(), today()
     sent = {"medicine": 0, "elder_reminder": 0, "elder_missed": 0}
+    from . import ops  # appointment reminders (fewer no-shows)
+
+    sent.update({f"appointment_{k}": v for k, v in ops.appointment_reminders(db).items()})
     accounts = {}
     for m in db.scalars(select(Medicine).where(Medicine.active.is_(True))):
         if not running(m, t):

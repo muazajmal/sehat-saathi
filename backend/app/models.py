@@ -32,6 +32,7 @@ class Slot(Base):
     minutes: Mapped[int] = mapped_column(Integer, default=15)
     # open -> held (AI proposed it) -> booked (doctor approved)
     status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    hospital_id: Mapped[int] = mapped_column(Integer, default=1, server_default="1", index=True)
 
 
 class Case(Base):
@@ -63,6 +64,11 @@ class Case(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, index=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    hospital_id: Mapped[int] = mapped_column(Integer, default=1, server_default="1", index=True)
+    # No-shows: the patient's answer to reminders, and whether they came (marked by staff).
+    patient_reply: Mapped[str | None] = mapped_column(String(12), nullable=True)  # coming | cancelled
+    patient_reply_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    attendance: Mapped[str | None] = mapped_column(String(12), nullable=True)  # arrived | no_show
 
     patient: Mapped[Patient] = relationship(back_populates="cases")
     proposed_slot: Mapped[Slot | None] = relationship()
@@ -243,6 +249,7 @@ class Account(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    hospital_id: Mapped[int] = mapped_column(Integer, default=1, server_default="1", index=True)
 
 
 # ---------- Community features: notifications, area alerts, blood donors, medicines, elder check-ins ----------
@@ -307,6 +314,7 @@ class AreaAlert(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    hospital_id: Mapped[int] = mapped_column(Integer, default=1, server_default="1", index=True)
 
 
 class Donor(Base):
@@ -337,6 +345,7 @@ class BloodRequest(Base):
     note: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(12), default="open")  # open | filled | closed
     created_by: Mapped[str] = mapped_column(String(120), default="")
+    hospital_id: Mapped[int] = mapped_column(Integer, default=1, server_default="1", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
 
@@ -429,3 +438,54 @@ class EmailSent(Base):
     key: Mapped[str] = mapped_column(String(80), unique=True)  # "case:12:confirmed"
     to: Mapped[str] = mapped_column(String(200))
     at: Mapped[datetime] = mapped_column(DateTime)
+
+
+
+class Tenant(Base):
+    """A hospital or clinic using Sehat Saathi. Its staff, slots and cases are kept apart from others."""
+
+    __tablename__ = "tenants"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    slug: Mapped[str] = mapped_column(String(60), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    city: Mapped[str] = mapped_column(String(80), default="Multan")
+    address: Mapped[str] = mapped_column(String(240), default="")
+    phone: Mapped[str] = mapped_column(String(32), default="")
+    status: Mapped[str] = mapped_column(String(12), default="pending", index=True)  # pending | active | suspended
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class EmailJob(Base):
+    """An email waiting for the n8n Gmail workflow to pick it up (given out once)."""
+
+    __tablename__ = "email_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token: Mapped[str] = mapped_column(String(64))
+    key: Mapped[str] = mapped_column(String(100), unique=True)  # one email per purpose, e.g. "case:12:confirmed"
+    to: Mapped[str] = mapped_column(String(200))
+    subject: Mapped[str] = mapped_column(String(240))
+    html: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ResetToken(Base):
+    __tablename__ = "reset_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Attempt(Base):
+    """For rate limits: one row per attempt at something that can be abused (login, sign-up, requests)."""
+
+    __tablename__ = "attempts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    key: Mapped[str] = mapped_column(String(120), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)
