@@ -4,6 +4,7 @@ import tempfile
 os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test.db"
 os.environ["GEMINI_API_KEY"] = ""  # rules-only, no network in tests
 os.environ["SEED_DEMO"] = "1"
+os.environ["OPEN_DESK"] = "1"  # older tests use the desk without logging in; test_auth.py turns this off
 
 from fastapi.testclient import TestClient  # noqa: E402
 

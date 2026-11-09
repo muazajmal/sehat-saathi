@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, ApiError, type Prices } from "../lib/api";
+import { api, ApiError, session, type Prices } from "../lib/api";
 import { loadLang, myRequests, rememberRequest, saveLang, T, type MyRequest, type UiLang } from "../lib/patientText";
 import { composeMessage, EMPTY_QUICK, hasQuick, QT, quickPayload, type QuickState } from "../lib/quickText";
 import InstallApp from "./InstallApp";
@@ -28,10 +28,25 @@ export function PatientHeader({ lang, onLang, clinic }: { lang: UiLang; onLang: 
       <span className="p-clinic" dir="auto">
         {clinic}
       </span>
+      <MyAccountLink lang={lang} />
       <button className="p-lang" type="button" onClick={() => onLang(lang === "ur" ? "en" : "ur")}>
         {T[lang].switchTo}
       </button>
     </header>
+  );
+}
+
+function MyAccountLink({ lang }: { lang: UiLang }) {
+  const [name, setName] = useState<string | null>(null);
+  useEffect(() => {
+    const s = session.get();
+    setName(s && s.account.role === "patient" ? s.account.name : "");
+  }, []);
+  if (name === null) return null;
+  return (
+    <Link className="p-top-login" href={name ? "/patient/home" : "/login"}>
+      {name ? (lang === "ur" ? "میری درخواستیں" : "My requests") : lang === "ur" ? "لاگ ان" : "Log in"}
+    </Link>
   );
 }
 
@@ -82,6 +97,14 @@ export default function PatientPortal() {
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot: people never fill this in
+  // Logged-in patients don't need to type their name and number again.
+  useEffect(() => {
+    const s = session.get();
+    if (s && s.account.role === "patient") {
+      setName(s.account.name);
+      setPhone("0" + s.account.phone.replace(/^\+92/, ""));
+    }
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mine, setMine] = useState<MyRequest[]>([]);

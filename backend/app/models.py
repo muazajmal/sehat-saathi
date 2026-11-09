@@ -225,3 +225,21 @@ class AmbulanceMember(Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     responder = relationship("Responder")
+
+
+class Account(Base):
+    """A login. Roles: admin (runs the hospital desk, adds doctors), doctor (decides on cases),
+    patient (a local person who sees their own requests). Patients link to their cases by phone."""
+
+    __tablename__ = "accounts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    role: Mapped[str] = mapped_column(String(16), index=True)  # admin | doctor | patient
+    phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    password_hash: Mapped[str] = mapped_column(String(200))
+    hospital: Mapped[str] = mapped_column(String(160), default="")
+    specialty: Mapped[str] = mapped_column(String(60), default="")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

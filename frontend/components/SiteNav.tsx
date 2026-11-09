@@ -36,6 +36,9 @@ export default function SiteNav() {
           <Link href="/patient" className="nav-mobile-only" onClick={() => setOpen(false)}>
             I&apos;m a patient: get help
           </Link>
+          <Link href="/login" className="nav-mobile-only" onClick={() => setOpen(false)}>
+            Log in (patients, doctors, hospitals)
+          </Link>
           <Link href="/desk" className="nav-mobile-only" onClick={() => setOpen(false)}>
             Clinic desk
           </Link>
@@ -44,8 +47,8 @@ export default function SiteNav() {
           <Link href="/patient" className="nav-signin nav-patient">
             Get help
           </Link>
-          <Link href="/desk" className="nav-signin">
-            Clinic desk
+          <Link href="/login" className="nav-signin">
+            Log in
           </Link>
           <a href="#demo" className="btn btn-mint">
             Book a demo

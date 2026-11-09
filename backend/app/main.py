@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import billing, dispatch, members, patient, services, transport
+from . import accounts, auth, billing, dispatch, members, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
 from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
@@ -68,6 +68,10 @@ def _init_db():
         from .seed import seed
 
         seed()
+    from .db import SessionLocal
+
+    with SessionLocal() as db:
+        accounts.ensure_accounts(db)
 
 
 @asynccontextmanager
@@ -91,6 +95,7 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+app.include_router(accounts.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -102,10 +107,18 @@ app.add_middleware(
 URGENCY_ORDER = {"urgent": 0, "today": 1, "routine": 2}
 
 
-def staff_only(x_staff_key: str | None = Header(default=None)):
-    """The desk and patient data. Open only when STAFF_KEY is not set (demos with sample data)."""
-    if settings.staff_key and not (x_staff_key and secrets.compare_digest(x_staff_key, settings.staff_key)):
-        raise HTTPException(401, "Staff access code needed.")
+def staff_only(
+    authorization: str | None = Header(default=None),
+    x_staff_key: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """The desk and patient data: a doctor or admin login (or the STAFF_KEY for scripts)."""
+    return auth.staff_account(db, authorization, x_staff_key)
+
+
+def acting(who, typed: str) -> str:
+    """Decisions are signed with the logged-in doctor's own name, not a typed one."""
+    return who.name if who is not None else typed
 
 
 STAFF = [Depends(staff_only)]
@@ -119,6 +132,7 @@ def health():
         "ai": settings.gemini_model if settings.gemini_api_key else "rules-only",
         "whatsapp": bool(settings.whatsapp_token),
         "staff_code_required": bool(settings.staff_key),
+        "login_required": os.getenv("OPEN_DESK") != "1",
     }
 
 
@@ -195,19 +209,19 @@ def get_case(case_id: int, db: Session = Depends(get_db)):
     return services.get_case(db, case_id)
 
 
-@app.post("/api/cases/{case_id}/approve", response_model=CaseOut, dependencies=STAFF)
-def approve_case(case_id: int, body: ApproveIn, db: Session = Depends(get_db)):
-    return services.approve(db, case_id, body.staff, body.slot_id, body.note)
+@app.post("/api/cases/{case_id}/approve", response_model=CaseOut)
+def approve_case(case_id: int, body: ApproveIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    return services.approve(db, case_id, acting(who, body.staff), body.slot_id, body.note)
 
 
-@app.post("/api/cases/{case_id}/reject", response_model=CaseOut, dependencies=STAFF)
-def reject_case(case_id: int, body: RejectIn, db: Session = Depends(get_db)):
-    return services.reject(db, case_id, body.staff, body.note)
+@app.post("/api/cases/{case_id}/reject", response_model=CaseOut)
+def reject_case(case_id: int, body: RejectIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    return services.reject(db, case_id, acting(who, body.staff), body.note)
 
 
-@app.post("/api/cases/{case_id}/called", response_model=CaseOut, dependencies=STAFF)
-def log_callback(case_id: int, body: CallbackIn, db: Session = Depends(get_db)):
-    return services.mark_called(db, case_id, body.staff, body.note)
+@app.post("/api/cases/{case_id}/called", response_model=CaseOut)
+def log_callback(case_id: int, body: CallbackIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    return services.mark_called(db, case_id, acting(who, body.staff), body.note)
 
 
 # ---------- Slots ----------
@@ -293,14 +307,14 @@ def transport_options(case_id: int, db: Session = Depends(get_db)):
     return dispatch.options(db, case_id)
 
 
-@app.post("/api/cases/{case_id}/dispatch", response_model=DispatchOut, status_code=201, dependencies=STAFF)
-def send_responder(case_id: int, body: DispatchIn, db: Session = Depends(get_db)):
-    return dispatch.send(db, case_id, body.staff, body.responder_id, body.hospital_id, body.note)
+@app.post("/api/cases/{case_id}/dispatch", response_model=DispatchOut, status_code=201)
+def send_responder(case_id: int, body: DispatchIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    return dispatch.send(db, case_id, acting(who, body.staff), body.responder_id, body.hospital_id, body.note)
 
 
-@app.post("/api/dispatches/{dispatch_id}/status", response_model=DispatchOut, dependencies=STAFF)
-def dispatch_status(dispatch_id: int, body: DispatchStatusIn, db: Session = Depends(get_db)):
-    return dispatch.update_status(db, dispatch_id, body.staff, body.status, body.note)
+@app.post("/api/dispatches/{dispatch_id}/status", response_model=DispatchOut)
+def dispatch_status(dispatch_id: int, body: DispatchStatusIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    return dispatch.update_status(db, dispatch_id, acting(who, body.staff), body.status, body.note)
 
 
 @app.get("/api/dispatches/{dispatch_id}/track", response_model=TrackOut, dependencies=STAFF)
@@ -353,14 +367,14 @@ def case_charges(case_id: int, db: Session = Depends(get_db)):
     return billing.for_case(db, case_id)
 
 
-@app.post("/api/cases/{case_id}/charges", response_model=ChargeOut, status_code=201, dependencies=STAFF)
-def add_visit_fee(case_id: int, body: VisitChargeIn, db: Session = Depends(get_db)):
-    return billing.add_visit_charge(db, case_id, body.staff, body.amount_pkr, body.note)
+@app.post("/api/cases/{case_id}/charges", response_model=ChargeOut, status_code=201)
+def add_visit_fee(case_id: int, body: VisitChargeIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    return billing.add_visit_charge(db, case_id, acting(who, body.staff), body.amount_pkr, body.note)
 
 
-@app.post("/api/charges/{charge_id}/settle", response_model=ChargeOut, dependencies=STAFF)
-def settle_charge(charge_id: int, body: SettleIn, db: Session = Depends(get_db)):
-    return billing.settle(db, charge_id, body.staff, body.status, body.method, body.note)
+@app.post("/api/charges/{charge_id}/settle", response_model=ChargeOut)
+def settle_charge(charge_id: int, body: SettleIn, who=Depends(staff_only), db: Session = Depends(get_db)):
+    return billing.settle(db, charge_id, acting(who, body.staff), body.status, body.method, body.note)
 
 
 @app.get("/api/responders", response_model=list[ResponderOut], dependencies=STAFF)
@@ -395,10 +409,10 @@ def ambulance_list(db: Session = Depends(get_db)):
     return members.list_all(db)
 
 
-@app.post("/api/ambulances/{member_id}/review", response_model=AmbulanceOut, dependencies=STAFF)
-def ambulance_review(member_id: int, body: AmbulanceReviewIn, db: Session = Depends(get_db)):
+@app.post("/api/ambulances/{member_id}/review", response_model=AmbulanceOut)
+def ambulance_review(member_id: int, body: AmbulanceReviewIn, who=Depends(staff_only), db: Session = Depends(get_db)):
     """Staff approve after checking the papers, or reject / pause a member."""
-    return members.review(db, member_id, body.staff, body.decision, body.note)
+    return members.review(db, member_id, acting(who, body.staff), body.decision, body.note)
 
 
 @app.get("/api/hospitals")

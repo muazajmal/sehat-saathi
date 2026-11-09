@@ -95,6 +95,24 @@ Live: website https://sehat-saathi-eta.vercel.app, API https://sehat-saathi-api.
 project's own Vercel addresses (`CORS_ORIGIN_REGEX`). Urgent cases are also sent to an n8n webhook
 (`N8N_ESCALATION_WEBHOOK`) that logs them to the "Sehat Saathi - Urgent Alerts" data table.
 
+## Logins: hospitals, doctors and patients
+
+Open `/login`. It has two doors:
+
+| Who | How they get an account | What they see |
+| --- | --- | --- |
+| **Hospital admin** | First admin comes from `ADMIN_PHONE` + `ADMIN_PASSWORD` (or the demo account) | The desk, plus **Team** (`/desk/team`): add doctors and admins, switch accounts off, reset passwords |
+| **Doctor** | Added by the hospital admin; gets 6 days of appointment slots automatically | The desk. Every approve / decline / call-back is signed with **their own name** |
+| **Patient** | Signs up free at `/login` with phone + password | **My requests** (`/patient/home`): every request sent from their number (website, WhatsApp, Telegram), with the doctor's decision. The request form fills in their name and number |
+
+Phone + password only, so there is no SMS cost. Passwords are stored as PBKDF2 hashes; logins are signed 7-day
+tokens (`AUTH_SECRET`). A patient token can never open the desk, and the staff door refuses patient accounts.
+Getting help **never needs an account**: `/patient` and Call 1122 stay open to everyone.
+
+Demo accounts (seeded with `SEED_DEMO=1`, sample data only; switch them off on the Team page for real use):
+admin `0300 0000001` / `admin123`, doctor `0300 0000002` / `doctor123`, patient `0300 1112233` / `patient123`.
+`OPEN_DESK=1` reopens the desk without a login (local demos only).
+
 ## Safety design (say this in the pitch)
 
 1. **The AI can only hold a slot.** `approve` requires a staff name; it's the only path to `booked`.

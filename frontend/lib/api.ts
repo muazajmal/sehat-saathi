@@ -323,15 +323,64 @@ export const staffCode = {
   },
 };
 
+// ---------- Logins (hospital admin, doctor, patient) ----------
+
+export type Role = "admin" | "doctor" | "patient";
+
+export interface Account {
+  id: number;
+  role: Role;
+  phone: string;
+  name: string;
+  hospital: string;
+  specialty: string;
+  active: boolean;
+}
+
+export interface SessionInfo {
+  token: string;
+  account: Account;
+}
+
+export interface MyCase {
+  case_id: number;
+  token: string;
+  created_at: string;
+  message: string;
+  urgency: Urgency;
+  status: CaseStatus;
+  slot: { starts_at: string; doctor: string } | null;
+}
+
+const SESSION_KEY = "sehat.session";
+export const session = {
+  get: (): SessionInfo | null => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? (JSON.parse(raw) as SessionInfo) : null;
+    } catch {
+      return null;
+    }
+  },
+  set: (s: SessionInfo | null) => {
+    try {
+      if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+      else localStorage.removeItem(SESSION_KEY);
+    } catch {}
+  },
+};
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   const code = typeof window === "undefined" ? "" : staffCode.get();
+  const token = typeof window === "undefined" ? "" : session.get()?.token ?? "";
   try {
     res = await fetch(`${API}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",
         ...(code ? { "X-Staff-Key": code } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(init?.headers ?? {}),
       },
       cache: "no-store",
@@ -354,6 +403,22 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  login: (phone: string, password: string, portal: "patient" | "staff") =>
+    call<SessionInfo>("/api/auth/login", { method: "POST", body: JSON.stringify({ phone, password, portal }) }),
+  signup: (phone: string, name: string, password: string) =>
+    call<SessionInfo>("/api/auth/signup", { method: "POST", body: JSON.stringify({ phone, name, password }) }),
+  me: () => call<Account>("/api/auth/me"),
+  changePassword: (old_password: string, new_password: string) =>
+    call<{ ok: boolean }>("/api/auth/password", { method: "POST", body: JSON.stringify({ old_password, new_password }) }),
+  myCases: () => call<MyCase[]>("/api/me/cases"),
+  team: () => call<Account[]>("/api/admin/accounts?role=staff"),
+  patientAccounts: () => call<Account[]>("/api/admin/accounts?role=patient"),
+  addStaff: (b: { role: "doctor" | "admin"; phone: string; name: string; password: string; specialty: string }) =>
+    call<Account>("/api/admin/accounts", { method: "POST", body: JSON.stringify(b) }),
+  setActive: (id: number, active: boolean) =>
+    call<Account>(`/api/admin/accounts/${id}/active`, { method: "POST", body: JSON.stringify({ active }) }),
+  resetPassword: (id: number, new_password: string) =>
+    call<Account>(`/api/admin/accounts/${id}/password`, { method: "POST", body: JSON.stringify({ new_password }) }),
   ambulanceRegister: (b: AmbulanceSignup) =>
     call<AmbulanceMember>("/api/ambulances/register", { method: "POST", body: JSON.stringify(b) }),
   ambulanceMe: (m: number, t: string) => call<AmbulanceMember>(`/api/ambulances/me?m=${m}&t=${encodeURIComponent(t)}`),
@@ -363,7 +428,7 @@ export const api = {
   ambulanceReview: (id: number, staff: string, decision: "approve" | "reject" | "suspend", note = "") =>
     call<AmbulanceMember>(`/api/ambulances/${id}/review`, { method: "POST", body: JSON.stringify({ staff, decision, note }) }),
   health: () =>
-    call<{ ok: boolean; clinic: string; ai: string; whatsapp: boolean; staff_code_required: boolean }>("/api/health"),
+    call<{ ok: boolean; clinic: string; ai: string; whatsapp: boolean; staff_code_required: boolean; login_required?: boolean }>("/api/health"),
   staffCheck: () => call<{ ok: boolean }>("/api/staff/check"),
   stats: () => call<Stats>("/api/stats"),
   cases: (status: CaseStatus | "all") => call<Case[]>(`/api/cases?status=${status}`),

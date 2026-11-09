@@ -534,3 +534,16 @@
   color: var(--ink);
 }
 .p-away p { margin: 6px 0 0; color: var(--muted); }
+.patient .link-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.patient .p-top-login {
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
