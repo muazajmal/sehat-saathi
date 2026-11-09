@@ -146,16 +146,17 @@ def build(db: Session, case: Case, kind: str, link: str) -> tuple[str, str]:
         head = "Appointment confirmed ✓"
     elif kind in ("reminder-day", "reminder-soon"):
         soon = kind == "reminder-soon"
-        subject = f"{'Soon' if soon else 'Tomorrow'}: your appointment with {slot.doctor} at {slot.starts_at:%I:%M %p}".replace(" 0", " ")
+        today_ = slot.starts_at.date() == now().date()
+        subject = f"{'Soon' if soon else 'Today' if today_ else 'Tomorrow'}: your appointment with {slot.doctor} at {slot.starts_at:%I:%M %p}".replace(" 0", " ")
         en = (f"<p>{hello_en}</p><p>A reminder: you have an appointment with <b>{e(slot.doctor)}</b> on "
               f"<b>{e(when(slot.starts_at))}</b> at {clinic}.</p>"
               "<p>Please open your request and tap <b>I'll come</b>, or <b>Cancel</b> if you can't make it, "
               "so someone else can have your time.</p>")
         ur = (f"<p>{hello_ur}</p><p>یاد دہانی: آپ کی <b>{e(slot.doctor)}</b> کے ساتھ اپائنٹمنٹ ہے: {e(when(slot.starts_at))}، {clinic}۔</p>"
               "<p>براہ کرم اپنی درخواست کھول کر <b>میں آؤں گا/گی</b> دبائیں، یا نہ آ سکیں تو <b>منسوخ</b> کریں تاکہ کسی اور کو وقت مل سکے۔</p>")
-        head = "Appointment soon" if soon else "Appointment tomorrow"
+        head = "Appointment soon" if soon else "Appointment today" if today_ else "Appointment tomorrow"
     else:
-        subject = f"About your request to {settings.clinic_name}"
+        subject = f"About your request to {tenancy.name_of(db, case.hospital_id or 1)}"
         note = e(case.review_note or "")
         en = (f"<p>{hello_en}</p><p>A doctor has looked at your request and we couldn't book a visit this time.</p>"
               + (f"<p><b>Note from the clinic:</b> {note}</p>" if note else "")

@@ -265,6 +265,8 @@ class Notification(Base):
     kind: Mapped[str] = mapped_column(String(24))  # alert | blood | medicine | elder | booking
     title: Mapped[str] = mapped_column(String(160))
     body: Mapped[str] = mapped_column(Text, default="")
+    title_ur: Mapped[str] = mapped_column(String(200), default="")
+    body_ur: Mapped[str] = mapped_column(Text, default="")
     link: Mapped[str] = mapped_column(String(400), default="")
     dedupe: Mapped[str | None] = mapped_column(String(120), unique=True, nullable=True)
     read: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -281,6 +283,7 @@ class PushSub(Base):
     endpoint: Mapped[str] = mapped_column(String(600), unique=True)
     p256dh: Mapped[str] = mapped_column(String(200))
     auth: Mapped[str] = mapped_column(String(80))
+    lang: Mapped[str] = mapped_column(String(4), default="ur")
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
 

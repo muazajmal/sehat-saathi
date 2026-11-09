@@ -75,6 +75,7 @@ def _init_db():
 
     with SessionLocal() as db:
         tenancy.ensure_default(db)
+        tenancy.tidy_phones(db)
         accounts.ensure_accounts(db)
         if os.getenv("SEED_DEMO", "1") == "1":
             community.seed_community(db)
@@ -159,8 +160,10 @@ def staff_check():
 # ---------- Intake ----------
 
 @app.post("/api/intake", response_model=IntakeOut, status_code=201)
-def intake(body: IntakeIn, db: Session = Depends(get_db)):
+def intake(body: IntakeIn, request: Request, db: Session = Depends(get_db)):
     """A patient message from any channel (patient website, demo, n8n). Public."""
+    tenancy.limit(db, f"intake-ip:{accounts.client_ip(request)}", 60, 60,
+                  "Too many requests from this connection. Please wait, or call 1122 in an emergency.")
     hosp = tenancy.active(db, body.hospital)
     tenancy.limit(db, f"intake:{body.phone.strip()[-10:]}", 12, 60, "Too many requests from this number. Please wait, or call 1122 in an emergency.")
     case = services.create_intake(db, body.phone.strip(), body.name.strip(), body.message.strip(), body.channel,
@@ -179,9 +182,10 @@ def intake(body: IntakeIn, db: Session = Depends(get_db)):
 
 
 @app.post("/api/transcribe")
-def transcribe(body: TranscribeIn):
+def transcribe(body: TranscribeIn, request: Request, db: Session = Depends(get_db)):
     """Voice note from the patient website -> text, so people can speak instead of typing.
     The text goes back into the form for the patient to check before sending."""
+    tenancy.limit(db, f"voice:{accounts.client_ip(request)}", 40, 60, "Too many voice notes. Please type instead, or wait a little.")
     from . import voice
 
     return {"text": voice.transcribe(body.audio_b64, body.mime, body.ui_lang)}
@@ -428,8 +432,9 @@ def responders(db: Session = Depends(get_db)):
 
 
 @app.post("/api/ambulances/register", response_model=AmbulanceOut, status_code=201)
-def ambulance_register(body: AmbulanceIn, db: Session = Depends(get_db)):
+def ambulance_register(body: AmbulanceIn, request: Request, db: Session = Depends(get_db)):
     """A local ambulance signs up. It can't take patients until staff approve it."""
+    tenancy.limit(db, f"ambulance:{accounts.client_ip(request)}", 10, 60 * 24)
     if not body.agree:
         raise HTTPException(422, "Please agree to the rules first.")
     m = members.register(db, body.driver_name.strip(), body.phone, body.organisation.strip(), body.vehicle_type,
@@ -476,8 +481,9 @@ def sample_location():
 # ---------- Website ----------
 
 @app.post("/api/leads", response_model=LeadOut, status_code=201)
-def create_lead(body: LeadIn, db: Session = Depends(get_db)):
+def create_lead(body: LeadIn, request: Request, db: Session = Depends(get_db)):
     """"Book a demo" form on the website."""
+    tenancy.limit(db, f"lead:{accounts.client_ip(request)}", 10, 60)
     lead = Lead(**body.model_dump(), created_at=services.now())
     db.add(lead)
     db.commit()

@@ -102,10 +102,18 @@ def appointment_reminders(db: Session) -> dict:
             continue
         tok = patient.issue_token(db, case.id)
         link = f"/patient/status?c={case.id}&t={tok}"
-        title = (f"Soon: {slot.doctor} at {slot.starts_at:%I:%M %p}" if kind == "soon"
-                 else f"Tomorrow: {slot.doctor} at {slot.starts_at:%I:%M %p}").replace(" 0", " ")
+        at = f"{slot.starts_at:%I:%M}".lstrip("0")
+        ampm = slot.starts_at.strftime("%p")
+        same_day = slot.starts_at.date() == t.date()
+        when_en = "Soon" if kind == "soon" else ("Today" if same_day else "Tomorrow")
+        when_ur = "جلد" if kind == "soon" else ("آج" if same_day else "کل")
+        h = slot.starts_at.hour
+        part_ur = "صبح" if h < 12 else "دوپہر" if h < 17 else "شام"
+        title = f"{when_en}: {slot.doctor} at {at} {ampm.lower()}"
         if notify.notify(db, case.patient.phone, "booking", title, "Tap \"I'll come\" or \"Cancel\" so others can use the time.",
-                         link, dedupe=f"appt-{kind}:{case.id}"):
+                         link, dedupe=f"appt-{kind}:{case.id}",
+                         ur=(f"{when_ur} {part_ur} {at} بجے: {slot.doctor}",
+                             "'میں آؤں گا' یا 'منسوخ' دبائیں تاکہ وقت کسی اور کے کام آ سکے۔")):
             emails.trigger(db, case, f"reminder-{kind}")
             sent[kind] += 1
     return sent
@@ -269,8 +277,7 @@ def delete_me(body: DeleteIn, a: Account = Depends(auth.patient_only), db: Sessi
     db.execute(delete(PushSub).where(PushSub.owner == f"phone:{phone}"))
     db.execute(delete(ContactEmail).where(ContactEmail.phone == phone))
     db.execute(delete(ResetToken).where(ResetToken.account_id == a.id))
-    p = db.scalar(select(Patient).where(Patient.phone == phone))
-    if p:
+    for p in db.scalars(select(Patient).where(Patient.phone.in_(auth.phone_variants(phone)))).all():
         p.name, p.phone = "", f"deleted:{p.id}"
         for c in db.scalars(select(Case).where(Case.patient_id == p.id)):
             c.message = "[removed at the patient's request]"

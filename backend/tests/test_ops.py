@@ -123,3 +123,41 @@ def test_wrong_passwords_are_limited():
             c.post("/api/auth/login", json={"phone": "0300 0000002", "password": "nope", "portal": "staff"})
         r = c.post("/api/auth/login", json={"phone": "0300 0000002", "password": "doctor123", "portal": "staff"})
         assert r.status_code == 429
+
+
+def test_requests_typed_with_0300_show_in_the_patients_account():
+    """A request typed as "0300 …" and an account made as "+92300…" are the same person."""
+    with client() as c:
+        tok = c.post("/api/auth/signup", json={"phone": "+92 345 1212121", "name": "Saima", "password": "saima123"}).json()["token"]
+        c.post("/api/intake", json={"phone": "0345-1212121", "name": "Saima", "message": "Bukhar hai do din se"})
+        mine = c.get("/api/me/cases", headers=bearer(tok)).json()
+        assert len(mine) == 1 and "Bukhar" in mine[0]["message"]
+
+
+def test_old_untidy_numbers_still_match():
+    from app.models import Patient
+    from app import tenancy
+    with client() as c:
+        with SessionLocal() as db:
+            p = Patient(phone="03451313131", name="Old", created_at=now())
+            db.add(p)
+            db.flush()
+            db.add(Case(patient_id=p.id, message="old request", channel="whatsapp", urgency="routine",
+                        status="pending_review", created_at=now()))
+            db.commit()
+            tenancy.tidy_phones(db)
+            assert db.get(Patient, p.id).phone == "+923451313131"
+        tok = c.post("/api/auth/signup", json={"phone": "03451313131", "name": "Old", "password": "oldone1"}).json()["token"]
+        assert [x["message"] for x in c.get("/api/me/cases", headers=bearer(tok)).json()] == ["old request"]
+
+
+def test_messages_come_in_urdu_too():
+    with client() as c:
+        tok = c.post("/api/auth/signup", json={"phone": "0346 5656565", "name": "Bilal", "password": "bilal123"}).json()["token"]
+        e = c.post("/api/me/elders", headers=bearer(tok), json={"name": "Dadi Ami"}).json()
+        with SessionLocal() as db:
+            from app.models import Elder
+            et = db.get(Elder, e["id"]).token
+        c.post("/api/checkin", params={"e": e["id"], "t": et, "status": "ok"})
+        n = c.get("/api/me/inbox", headers=bearer(tok)).json()[0]
+        assert "Dadi Ami" in n["title"] and "ٹھیک" in n["title_ur"]

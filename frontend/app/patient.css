@@ -99,7 +99,7 @@
   font-size: 0.8125rem;
 }
 .p-card textarea,
-.p-card input:not([type="checkbox"]) {
+.p-card input:not([type="checkbox"]):not([type="radio"]) {
   width: 100%;
   padding: 12px 14px;
   margin-bottom: 12px;
@@ -976,3 +976,8 @@
 .ck-push { justify-self: center; border: 1px solid var(--line-strong); background: transparent; color: var(--muted); border-radius: 999px; padding: 10px 18px; font: inherit; }
 .p-reply-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 4px; }
 .p-reply-row .btn { flex: 1; min-height: 46px; }
+
+/* Blood groups always read left to right ("O+", never "+O"), also inside Urdu pages. */
+.chips.groups button, .donor-badge, .bg-ltr { direction: ltr; unicode-bidi: isolate; }
+.donor-where { margin: -4px 0 8px; font-weight: 600; color: var(--ink); text-align: start; }
+[dir="rtl"] .donor-where { text-align: right; }

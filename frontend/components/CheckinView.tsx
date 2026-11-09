@@ -82,7 +82,7 @@ export default function CheckinView() {
       )}
       <a className="ck-1122" href="tel:1122">📞 {W("Emergency: call 1122", "ایمرجنسی: 1122 پر کال کریں")}</a>
       {push !== "on" ? (
-        <button type="button" className="ck-push" onClick={async () => setPush(await enablePush({ elder: e, token: t }))}>
+        <button type="button" className="ck-push" onClick={async () => setPush(await enablePush({ elder: e, token: t, lang: ur ? "ur" : "en" }))}>
           🔔 {W("Turn on daily reminder", "روزانہ یاد دہانی آن کریں")}
         </button>
       ) : (

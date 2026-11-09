@@ -23,6 +23,9 @@ NEW_COLUMNS = [
     ("accounts", "hospital_id", "INTEGER NOT NULL DEFAULT 1"),
     ("area_alerts", "hospital_id", "INTEGER NOT NULL DEFAULT 1"),
     ("blood_requests", "hospital_id", "INTEGER NOT NULL DEFAULT 1"),
+    ("notifications", "title_ur", "VARCHAR(200) NOT NULL DEFAULT ''"),
+    ("notifications", "body_ur", "TEXT NOT NULL DEFAULT ''"),
+    ("push_subs", "lang", "VARCHAR(4) NOT NULL DEFAULT 'ur'"),
 ]
 
 
@@ -33,6 +36,23 @@ def migrate(engine):
         for table, col, ddl in NEW_COLUMNS:
             if table in tables and col not in {c["name"] for c in insp.get_columns(table)}:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}"))
+
+
+def tidy_phones(db: Session):
+    """Older requests saved numbers as typed ("0300 1234567"). Save them as +92… so they show up in
+    the patient's account; a number that already exists in tidy form is left for phone_variants."""
+    from .auth import tidy_phone
+    from .models import Patient
+    taken = set(db.scalars(select(Patient.phone)))
+    changed = False
+    for p in db.scalars(select(Patient).where(~Patient.phone.like("+%"))).all():
+        new = tidy_phone(p.phone)
+        if new != p.phone and new not in taken:
+            taken.add(new)
+            p.phone = new
+            changed = True
+    if changed:
+        db.commit()
 
 
 def ensure_default(db: Session):
@@ -86,6 +106,10 @@ def check(db: Session, key: str, max_count: int, minutes: int, message: str = "T
 def record(db: Session, key: str):
     db.add(Attempt(key=key, at=now()))
     db.commit()
+
+
+def client_ip(request) -> str:
+    return (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "") or "?").split(",")[0].strip()
 
 
 def limit(db: Session, key: str, max_count: int, minutes: int, message: str = "Too many tries. Please wait a few minutes."):

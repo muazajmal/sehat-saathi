@@ -7,6 +7,9 @@ import { cx, type BloodAskT } from "../lib/community";
 import type { UiLang } from "../lib/patientText";
 import PatientFrame, { L } from "./PatientFrame";
 
+// Keeps an English name or "O+" in one piece inside an Urdu sentence.
+const iso = (t: string) => `\u2068${t}\u2069`;
+
 export default function DonorAnswerView() {
   return <PatientFrame>{(lang) => <Answer lang={lang} />}</PatientFrame>;
 }
@@ -39,9 +42,10 @@ function Answer({ lang }: { lang: UiLang }) {
   return (
     <section className="p-card">
       <p className="donor-badge">{ask.blood_group}</p>
-      <h1>{L(lang, `Blood needed at ${ask.hospital}`, `${ask.hospital} میں خون کی ضرورت ہے`)}</h1>
+      <h1>{L(lang, "Blood needed", "خون کی ضرورت ہے")}</h1>
+      <p className="donor-where" dir="ltr">🏥 {ask.hospital}</p>
       <p className="p-muted">
-        {L(lang, `${ask.units} unit(s) of ${ask.blood_group} or a compatible group.`, `${ask.blood_group} یا ملتے گروپ کی ${ask.units} بوتل۔`)}
+        {L(lang, `${ask.units} unit(s) of ${ask.blood_group} or a compatible group.`, `${iso(ask.blood_group)} یا ملتے گروپ کی ${ask.units} بوتل۔`)}
         {ask.km != null ? ` ${L(lang, `About ${ask.km} km from you.`, `آپ سے تقریباً ${ask.km} کلومیٹر۔`)}` : ""}
       </p>
       {ask.answer === "waiting" && ask.request_status === "open" && (

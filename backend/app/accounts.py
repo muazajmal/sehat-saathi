@@ -148,10 +148,10 @@ def change_password(body: PasswordIn, a: Account = Depends(auth.current_account)
 def my_cases(a: Account = Depends(auth.patient_only), db: Session = Depends(get_db)):
     """Every request sent from this phone number (website, WhatsApp or Telegram), newest first,
     each with its private status link."""
-    p = db.scalar(select(Patient).where(Patient.phone == a.phone))
-    if p is None:
+    ids = list(db.scalars(select(Patient.id).where(Patient.phone.in_(auth.phone_variants(a.phone)))))
+    if not ids:
         return []
-    cases = db.scalars(select(Case).where(Case.patient_id == p.id).order_by(Case.created_at.desc()).limit(50))
+    cases = db.scalars(select(Case).where(Case.patient_id.in_(ids)).order_by(Case.created_at.desc()).limit(50))
     items = []
     for c in cases:
         t = patient_view.issue_token(db, c.id)

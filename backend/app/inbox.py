@@ -46,19 +46,21 @@ def public_key() -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
 
 
-def subscribe(db: Session, owner: str, sub: dict):
+def subscribe(db: Session, owner: str, sub: dict, lang: str = "ur"):
     endpoint = sub["endpoint"]
     keys = sub.get("keys") or {}
     row = db.scalar(select(PushSub).where(PushSub.endpoint == endpoint))
     if row is None:
-        row = PushSub(endpoint=endpoint, created_at=now(), owner=owner, p256dh=keys.get("p256dh", ""), auth=keys.get("auth", ""))
+        row = PushSub(endpoint=endpoint, created_at=now(), owner=owner, p256dh=keys.get("p256dh", ""), auth=keys.get("auth", ""),
+                      lang=lang)
         db.add(row)
     else:
         row.owner, row.p256dh, row.auth = owner, keys.get("p256dh", row.p256dh), keys.get("auth", row.auth)
+        row.lang = lang
     db.commit()
 
 
-def push(db: Session, owner: str, title: str, body: str, link: str = "") -> int:
+def push(db: Session, owner: str, title: str, body: str, link: str = "", ur: tuple[str, str] | None = None) -> int:
     """Send to every phone of this owner. Dead subscriptions are removed. Returns how many got it."""
     subs = list(db.scalars(select(PushSub).where(PushSub.owner == owner)))
     if not subs:
@@ -68,8 +70,9 @@ def push(db: Session, owner: str, title: str, body: str, link: str = "") -> int:
     except Exception:
         return 0
     sent = 0
-    payload = json.dumps({"title": title, "body": body, "link": link or "/app"})
     for s in subs:
+        t, b = ur if (ur and ur[0] and (s.lang or "ur") == "ur") else (title, body)
+        payload = json.dumps({"title": t, "body": b, "link": link or "/app"})
         try:
             webpush({"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}}, payload,
                     vapid_private_key=vapid(), vapid_claims={"sub": os.getenv("VAPID_SUBJECT", settings.frontend_url or "https://sehat-saathi.app")},
@@ -85,16 +88,18 @@ def push(db: Session, owner: str, title: str, body: str, link: str = "") -> int:
 
 
 def notify(db: Session, phone: str, kind: str, title: str, body: str, link: str = "", dedupe: str | None = None,
-           push_owner: str | None = None) -> bool:
-    """Inbox + phone notification + n8n hook. With `dedupe`, the same message is only ever sent once."""
-    n = Notification(phone=phone, kind=kind, title=title[:160], body=body, link=link, dedupe=dedupe, created_at=now())
+           push_owner: str | None = None, ur: tuple[str, str] | None = None) -> bool:
+    """Inbox + phone notification + n8n hook. With `dedupe`, the same message is only ever sent once.
+    `ur` is the (title, body) in Urdu; each person sees the language they chose."""
+    n = Notification(phone=phone, kind=kind, title=title[:160], body=body, link=link, dedupe=dedupe, created_at=now(),
+                     title_ur=(ur[0] if ur else "")[:200], body_ur=ur[1] if ur else "")
     db.add(n)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
         return False
-    push(db, push_owner or f"phone:{phone}", title, body, link)
+    push(db, push_owner or f"phone:{phone}", title, body, link, ur)
     hook = os.getenv("N8N_NOTIFY_WEBHOOK")
     if hook:
         try:

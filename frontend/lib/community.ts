@@ -124,6 +124,8 @@ export interface InboxItem {
   id: number;
   kind: string;
   title: string;
+  title_ur: string;
+  body_ur: string;
   body: string;
   link: string;
   read: boolean;
@@ -175,12 +177,12 @@ export const cx = {
   inbox: () => call<InboxItem[]>("/api/me/inbox"),
   inboxRead: () => call<{ ok: boolean }>("/api/me/inbox/read", { method: "POST" }),
   pushKey: () => call<{ key: string }>("/api/push/key"),
-  pushSubscribe: (b: { subscription: PushSubscriptionJSON; elder?: number; token?: string; donor_token?: string }) =>
+  pushSubscribe: (b: { subscription: PushSubscriptionJSON; elder?: number; token?: string; donor_token?: string; lang?: "ur" | "en" }) =>
     call<{ ok: boolean }>("/api/push/subscribe", j(b)),
 };
 
 /** Turn on phone notifications for this person / elder / donor. Returns a short status. */
-export async function enablePush(owner: { elder?: number; token?: string; donor_token?: string } = {}): Promise<"on" | "denied" | "unsupported" | "error"> {
+export async function enablePush(owner: { elder?: number; token?: string; donor_token?: string; lang?: "ur" | "en" } = {}): Promise<"on" | "denied" | "unsupported" | "error"> {
   try {
     if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window))
       return "unsupported";
@@ -192,7 +194,11 @@ export async function enablePush(owner: { elder?: number; token?: string; donor_
     const raw = atob(key.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (key.length % 4)) % 4));
     const appKey = Uint8Array.from(raw, (c) => c.charCodeAt(0));
     const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey }));
-    await cx.pushSubscribe({ subscription: sub.toJSON(), ...owner });
+    let lang: "ur" | "en" = "ur";
+    try {
+      lang = localStorage.getItem("sehat-ui-lang") === "en" ? "en" : "ur";
+    } catch {}
+    await cx.pushSubscribe({ subscription: sub.toJSON(), lang, ...owner });
     return "on";
   } catch {
     return "error";

@@ -58,8 +58,16 @@ def case_payload(case: Case) -> dict:
     }
 
 
+def _hospital_name(db: Session, case: Case) -> str:
+    from .models import Tenant
+    t = db.get(Tenant, case.hospital_id or 1)
+    return t.name if t else settings.clinic_name
+
+
 def create_intake(db: Session, phone: str, name: str, message: str, channel: str,
                   quick_answers: dict | None = None, hospital_id: int = 1) -> Case:
+    from .auth import tidy_phone
+    phone = tidy_phone(phone)  # "0300 1234567" and "+923001234567" are the same patient
     patient = db.scalar(select(Patient).where(Patient.phone == phone))
     if patient is None:
         patient = Patient(phone=phone, name=name or "", created_at=now())
@@ -162,7 +170,7 @@ def approve(db: Session, case_id: int, staff: str, slot_id: int | None, note: st
             date=f"{s.starts_at:%d-%m-%Y}",
             time=f"{s.starts_at:%I:%M %p}",
             doctor=s.doctor,
-            clinic=settings.clinic_name,
+            clinic=_hospital_name(db, case),
         ),
     )
     return case

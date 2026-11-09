@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -60,6 +60,7 @@ class PushIn(BaseModel):
     elder: int | None = None
     token: str | None = None
     donor_token: str | None = None
+    lang: Literal["ur", "en"] = "ur"
 
 
 @router.get("/push/key")
@@ -87,7 +88,7 @@ def push_subscribe(body: PushIn, authorization: str | None = Header(default=None
         if acc is None:
             raise HTTPException(401, "Please log in.")
         owner = f"phone:{acc.phone}"
-    notify.subscribe(db, owner, body.subscription)
+    notify.subscribe(db, owner, body.subscription, body.lang)
     return {"ok": True}
 
 
@@ -95,8 +96,8 @@ def push_subscribe(body: PushIn, authorization: str | None = Header(default=None
 def inbox(a: Account = Depends(auth.current_account), db: Session = Depends(get_db)):
     tick(db)  # reminders that just fell due show up at once, even between scheduled runs
     rows = db.scalars(select(Notification).where(Notification.phone == a.phone).order_by(Notification.created_at.desc()).limit(50))
-    return [{"id": n.id, "kind": n.kind, "title": n.title, "body": n.body, "link": n.link, "read": n.read,
-             "created_at": n.created_at} for n in rows]
+    return [{"id": n.id, "kind": n.kind, "title": n.title, "body": n.body, "title_ur": n.title_ur or "",
+             "body_ur": n.body_ur or "", "link": n.link, "read": n.read, "created_at": n.created_at} for n in rows]
 
 
 @router.post("/me/inbox/read")
@@ -176,7 +177,8 @@ def publish_alert(alert_id: int, who=Depends(staff), db: Session = Depends(get_d
         for d in db.scalars(select(Donor).where(Donor.area == a.area)):
             phones.add(d.phone)
         for p in phones:
-            if notify.notify(db, p, "alert", a.title_en, a.body_en, f"/alerts#a{a.id}", dedupe=f"alert:{a.id}:{p}"):
+            if notify.notify(db, p, "alert", a.title_en, a.body_en, f"/alerts#a{a.id}", dedupe=f"alert:{a.id}:{p}",
+                             ur=(a.title_ur, a.body_ur)):
                 reached += 1
         return {**alert_out(a), "reached": reached}
     return alert_out(a)
@@ -227,7 +229,8 @@ def donor_out(d: Donor) -> dict:
 
 
 @router.post("/donors", status_code=201)
-def donor_signup(body: DonorIn, db: Session = Depends(get_db)):
+def donor_signup(body: DonorIn, request: Request, db: Session = Depends(get_db)):
+    tenancy.limit(db, f"donor:{tenancy.client_ip(request)}", 10, 60)
     if not body.eligible:
         raise HTTPException(422, "Only people aged 18 to 60, over 50 kg and in good health can join.")
     phone = auth.normalize_phone(body.phone)
@@ -317,7 +320,9 @@ def blood_request(body: BloodIn, who=Depends(staff), db: Session = Depends(get_d
         db.flush()
         notify.notify(db, d.phone, "blood", f"{body.blood_group} blood needed at {h.short}",
                       f"{body.units} unit(s) needed today. Can you donate? Tap to answer.",
-                      f"/donate/answer?a={ask.id}&t={d.token}", dedupe=f"blood:{ask.id}")
+                      f"/donate/answer?a={ask.id}&t={d.token}", dedupe=f"blood:{ask.id}",
+                      ur=(f"{h.short} میں {body.blood_group} خون کی ضرورت ہے",
+                          f"آج {body.units} یونٹ چاہئیں۔ کیا آپ عطیہ دے سکتے ہیں؟ جواب کے لیے ٹیپ کریں۔"))
     db.commit()
     return request_out(db, r)
 
@@ -405,8 +410,9 @@ def times_from(m: dict) -> list[str]:
 
 
 @router.post("/me/prescriptions/read")
-def read_prescription(body: RxPhotoIn, a: Account = Depends(auth.patient_only)):
+def read_prescription(body: RxPhotoIn, a: Account = Depends(auth.patient_only), db: Session = Depends(get_db)):
     """Gemini reads the photo. Nothing is saved until the patient checks the list and confirms it."""
+    tenancy.limit(db, f"rx:{a.id}", 20, 60, "Too many photos for now. Please wait an hour or add medicines by hand.")
     if not settings.gemini_api_key:
         raise HTTPException(503, "Reading photos needs the AI to be switched on. You can add medicines by hand.")
     data = ai.gemini_json(RX_PROMPT, [{"inline_data": {"mime_type": body.mime, "data": body.image_b64}}], timeout=40, temperature=0)
@@ -596,7 +602,9 @@ def checkin(e: int, t: str, status: Literal["ok", "help"], db: Session = Depends
     if status == "help":
         notify.notify(db, fam.phone, "elder", f"{el.name} pressed I NEED HELP",
                       f"Call {el.name} now{' on ' + el.phone if el.phone else ''}. In an emergency call 1122.",
-                      "/patient/family", dedupe=f"elder-help:{el.id}:{now().isoformat(timespec='minutes')}")
+                      "/patient/family", dedupe=f"elder-help:{el.id}:{now().isoformat(timespec='minutes')}",
+                      ur=(f"{el.name} نے 'مجھے مدد چاہیے' دبایا",
+                          f"ابھی {el.name} کو کال کریں{' (' + el.phone + ')' if el.phone else ''}۔ ایمرجنسی میں 1122 پر کال کریں۔"))
         if el.phone:
             case = services.create_intake(db, el.phone, el.name,
                                           f"Elder check-in: {el.name} pressed 'I need help' on the daily check-in. Please call now.",
@@ -606,7 +614,7 @@ def checkin(e: int, t: str, status: Literal["ok", "help"], db: Session = Depends
             db.commit()
     else:
         notify.notify(db, fam.phone, "elder", f"{el.name} checked in: okay ✓", "", "/patient/family",
-                      dedupe=f"elder-ok:{el.id}:{today()}")
+                      dedupe=f"elder-ok:{el.id}:{today()}", ur=(f"{el.name} نے بتایا: میں ٹھیک ہوں ✓", ""))
     return checkin_page(e, t, db)
 
 
@@ -633,20 +641,25 @@ def tick(db: Session) -> dict:
             accounts[m.account_id] = acc
             if notify.notify(db, acc.phone, "medicine", f"Time for {m.name}",
                              " · ".join(x for x in (m.dose, m.instructions_en) if x) or "Tap when you've taken it.",
-                             "/patient/medicines", dedupe=f"med:{m.id}:{day}:{hhmm}"):
+                             "/patient/medicines", dedupe=f"med:{m.id}:{day}:{hhmm}",
+                             ur=(f"{m.name} لینے کا وقت",
+                                 " · ".join(x for x in (m.dose, m.instructions_ur) if x) or "دوا لینے کے بعد ٹیپ کریں۔")):
                 sent["medicine"] += 1
     for e in db.scalars(select(Elder).where(Elder.active.is_(True))):
         s = elder_status(db, e)
         if s["status"] == "waiting":
             title = "السلام علیکم! کیا آپ آج ٹھیک ہیں؟" if e.lang == "ur" else "Good morning! Are you okay today?"
             if notify.notify(db, f"elder:{e.id}", "elder", title, "Tap to check in.", s["link"],
+                             ur=("السلام علیکم! کیا آپ آج ٹھیک ہیں؟", "جواب دینے کے لیے ٹیپ کریں۔") if e.lang == "ur" else None,
                              dedupe=f"elder-remind:{e.id}:{day}", push_owner=f"elder:{e.id}"):
                 sent["elder_reminder"] += 1
         elif s["status"] == "missed":
             fam = db.get(Account, e.family_account_id)
             if notify.notify(db, fam.phone, "elder", f"{e.name} hasn't checked in today",
                              f"Please call {e.name}{' on ' + e.phone if e.phone else ''} to make sure they're okay.",
-                             "/patient/family", dedupe=f"elder-missed:{e.id}:{day}"):
+                             "/patient/family", dedupe=f"elder-missed:{e.id}:{day}",
+                             ur=(f"{e.name} نے آج جواب نہیں دیا",
+                                 f"براہ کرم {e.name} کو کال کر کے خیریت معلوم کریں{' (' + e.phone + ')' if e.phone else ''}۔")):
                 sent["elder_missed"] += 1
     return sent
 

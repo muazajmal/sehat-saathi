@@ -5,6 +5,7 @@ import { api, ApiError, type Account } from "../lib/api";
 import { useSession } from "../lib/useSession";
 import AppShell, { useStaff } from "./AppShell";
 
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const SPECIALTIES = ["general", "paediatrics", "gynaecology", "cardiology", "medicine", "surgery", "dermatology", "ent"];
 
 /** Hospital admin: add doctors (they get their own login and appointment slots), switch them off, reset passwords. */
@@ -16,6 +17,7 @@ export default function Team() {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resetting, setResetting] = useState<{ id: number; pw: string } | null>(null);
   const [form, setForm] = useState({ role: "doctor" as "doctor" | "admin", name: "", phone: "", password: "", specialty: "general" });
 
   const load = useCallback(async () => {
@@ -63,11 +65,12 @@ export default function Team() {
     }
   }
 
-  async function reset(a: Account) {
-    const pw = window.prompt(`New password for ${a.name} (at least 6 letters):`);
-    if (!pw) return;
+  async function reset(a: Account, pw: string) {
+    setError(null);
+    setNote(null);
     try {
       await api.resetPassword(a.id, pw);
+      setResetting(null);
       setNote(`Password changed for ${a.name}. Tell them the new one in person.`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : String(err));
@@ -103,14 +106,36 @@ export default function Team() {
                   <div className="who">
                     <b>{a.name}</b>
                     <small>
-                      {a.role === "admin" ? "Admin" : a.specialty || "general"} · {a.phone}
+                      {a.role === "admin" ? "Admin" : a.specialty === "ent" ? "ENT" : cap(a.specialty || "general")} · {a.phone}
                       {a.active ? "" : " · switched off"}
                     </small>
                   </div>
                   <div className="acts">
-                    <button className="chip-btn" type="button" onClick={() => reset(a)}>
-                      Reset password
-                    </button>
+                    {resetting?.id === a.id ? (
+                      <form
+                        className="reset-row"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          reset(a, resetting.pw);
+                        }}
+                      >
+                        <input
+                          autoFocus
+                          type="text"
+                          aria-label={`New password for ${a.name}`}
+                          placeholder="New password (6+)"
+                          minLength={6}
+                          value={resetting.pw}
+                          onChange={(e) => setResetting({ id: a.id, pw: e.target.value })}
+                        />
+                        <button className="chip-btn" type="submit" disabled={resetting.pw.length < 6}>Save</button>
+                        <button className="chip-btn" type="button" onClick={() => setResetting(null)}>Cancel</button>
+                      </form>
+                    ) : (
+                      <button className="chip-btn" type="button" onClick={() => setResetting({ id: a.id, pw: "" })}>
+                        Reset password
+                      </button>
+                    )}
                     <button
                       className="chip-btn"
                       type="button"
@@ -128,7 +153,7 @@ export default function Team() {
           </section>
 
           <form className="team-card glass" onSubmit={add}>
-            <h2>Add a doctor</h2>
+            <h2>{form.role === "doctor" ? "Add a doctor" : "Add a hospital admin"}</h2>
             <label htmlFor="t-role">Role</label>
             <select id="t-role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "doctor" | "admin" })}>
               <option value="doctor">Doctor</option>
@@ -144,7 +169,7 @@ export default function Team() {
                 <select id="t-spec" value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value })}>
                   {SPECIALTIES.map((s) => (
                     <option key={s} value={s}>
-                      {s}
+                      {s === "ent" ? "ENT" : cap(s)}
                     </option>
                   ))}
                 </select>

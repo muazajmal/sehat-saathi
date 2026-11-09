@@ -44,6 +44,22 @@ def normalize_phone(raw: str) -> str:
     return "+" + digits
 
 
+def tidy_phone(raw: str) -> str:
+    """Like normalize_phone, but never fails: odd numbers are kept as typed."""
+    try:
+        return normalize_phone(raw)
+    except HTTPException:
+        return (raw or "").strip()
+
+
+def phone_variants(phone: str) -> list[str]:
+    """Every way the same Pakistani number may have been saved before numbers were tidied."""
+    out = {phone}
+    if phone.startswith("+92"):
+        out |= {phone[1:], "0" + phone[3:]}
+    return sorted(out)
+
+
 def hash_password(password: str) -> str:
     salt = secrets.token_bytes(16)
     h = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 200_000)

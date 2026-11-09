@@ -98,8 +98,8 @@ export default function PatientHome() {
             {inbox.slice(0, 6).map((n) => (
               <li key={n.id} className={n.read ? "" : "unread"}>
                 <Link href={n.link || "#"} onClick={() => cx.inboxRead().catch(() => {})}>
-                  <b dir="auto">{n.title}</b>
-                  {n.body && <span dir="auto">{n.body}</span>}
+                  <b dir="auto">{lang === "ur" && n.title_ur ? n.title_ur : n.title}</b>
+                  {(lang === "ur" && n.title_ur ? n.body_ur : n.body) && <span dir="auto">{lang === "ur" && n.title_ur ? n.body_ur : n.body}</span>}
                   <small>{when(n.created_at)}</small>
                 </Link>
               </li>

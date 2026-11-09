@@ -2418,4 +2418,11 @@ a.sslot:hover {
 .legal h1 { margin: 16px 0 4px; }
 .legal h2 { font-size: 1.125rem; margin: 22px 0 6px; }
 .legal ul { padding-left: 20px; }
-.legal a { color: var(--mint); }
+.legal a:not(.btn) { color: var(--mint); }
+
+/* Inline password reset on the Team page */
+.team-list .reset-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.team-list .reset-row input {
+  width: 160px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line-strong, rgba(150,230,210,.25));
+  background: var(--surface, #0b1715); color: inherit; font: inherit; font-size: 0.8125rem;
+}
