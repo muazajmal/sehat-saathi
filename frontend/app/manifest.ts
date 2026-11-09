@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Sehat Saathi · صحت ساتھی",
     short_name: "Sehat Saathi",
     description: "Tell a doctor what's wrong in any language, see the reply, and get help to hospital.",
-    start_url: "/patient?source=app",
+    start_url: "/app?source=app",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

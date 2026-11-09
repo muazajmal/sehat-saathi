@@ -47,7 +47,7 @@ export default function SiteNav() {
           <Link href="/patient" className="nav-signin nav-patient">
             Get help
           </Link>
-          <Link href="/login" className="nav-signin">
+          <Link href="/app" className="nav-signin">
             Log in
           </Link>
           <a href="#demo" className="btn btn-mint">

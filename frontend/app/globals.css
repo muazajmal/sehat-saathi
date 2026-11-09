@@ -2095,3 +2095,202 @@ a.sslot:hover {
   color: var(--routine);
   font-size: 0.875rem;
 }
+
+/* App opening screen */
+.welcome {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 20px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+  background:
+    radial-gradient(420px 320px at 50% 8%, rgba(95, 227, 196, 0.16), transparent 70%),
+    radial-gradient(360px 260px at 90% 100%, rgba(56, 200, 240, 0.08), transparent 70%);
+}
+.welcome-lang {
+  align-self: flex-end;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.welcome[dir="rtl"] .welcome-lang {
+  align-self: flex-start;
+}
+.welcome-hero {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.welcome-mark {
+  width: 96px;
+  height: 96px;
+  border-radius: 34px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, rgba(95, 227, 196, 0.16), rgba(56, 200, 240, 0.05));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 60px rgba(95, 227, 196, 0.25);
+  animation: welcome-in 0.7s ease-out both;
+}
+.welcome h1 {
+  margin: 10px 0 0;
+  display: grid;
+  gap: 2px;
+  line-height: 1.1;
+}
+.welcome-en {
+  font-size: 2.125rem;
+  letter-spacing: -0.02em;
+}
+.welcome-ur {
+  font-family: var(--urdu);
+  direction: rtl;
+  text-align: center;
+  justify-self: center;
+  font-size: 1.75rem;
+  color: var(--mint);
+  line-height: 1.9;
+}
+.welcome-pulse {
+  width: 200px;
+  height: 24px;
+}
+.welcome-pulse path {
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 320;
+  stroke-dashoffset: 320;
+  animation: welcome-beat 2.4s ease-in-out infinite;
+}
+.welcome-tag {
+  margin: 4px 0 0;
+  font-size: 1.1875rem;
+  font-weight: 600;
+}
+.welcome-sub {
+  margin: 0;
+  color: var(--muted);
+  max-width: 32ch;
+}
+.welcome[dir="rtl"] .welcome-tag,
+.welcome[dir="rtl"] .welcome-sub,
+.welcome[dir="rtl"] .welcome-btn,
+.welcome[dir="rtl"] .welcome-sos,
+.welcome[dir="rtl"] .welcome-foot,
+.welcome[dir="rtl"] .link-btn {
+  font-family: var(--urdu);
+  line-height: 1.9;
+}
+.welcome-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+}
+.welcome-btn {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  padding: 15px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 1.0625rem;
+}
+.welcome-btn small {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.welcome-btn.primary {
+  background: linear-gradient(180deg, var(--teal-strong), var(--mint));
+  color: var(--on-teal);
+  border-color: transparent;
+  box-shadow: 0 10px 30px rgba(95, 227, 196, 0.25);
+  font-size: 1.1875rem;
+}
+.welcome-btn.primary small {
+  color: rgba(2, 32, 25, 0.7);
+}
+.welcome-btn.quiet {
+  background: transparent;
+  font-size: 0.9375rem;
+  padding: 12px 18px;
+}
+.welcome-cont {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+.welcome-cont .welcome-btn {
+  width: 100%;
+}
+.welcome-new {
+  justify-self: center;
+  font-size: 0.9375rem;
+}
+.welcome-sos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--urgent-bg);
+  border: 1px solid rgba(255, 122, 131, 0.35);
+  font-size: 0.875rem;
+}
+.welcome-sos span {
+  flex: 1;
+}
+.welcome-sos a {
+  flex: none;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--urgent);
+  color: #2a0508;
+  font-weight: 700;
+  text-decoration: none;
+}
+.welcome-foot {
+  margin: 0;
+  text-align: center;
+  color: var(--faint);
+  font-size: 0.8125rem;
+}
+@keyframes welcome-beat {
+  0% {
+    stroke-dashoffset: 320;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes welcome-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-pulse path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .welcome-mark {
+    animation: none;
+  }
+}

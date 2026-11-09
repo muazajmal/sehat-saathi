@@ -57,7 +57,10 @@ export default function LoginView() {
   return (
     <main className="gate">
       <form className="gate-card glass" onSubmit={submit}>
-        <Logo />
+        <Link href="/app" className="link-btn" style={{ justifySelf: "start", fontSize: "0.875rem" }}>
+          ← Back
+        </Link>
+        <Logo href="/app" />
         <div className="auth-tabs" role="group" aria-label="Who are you?">
           <button type="button" aria-pressed={door === "patient"} onClick={() => { setDoor("patient"); setError(null); }}>
             Patient
