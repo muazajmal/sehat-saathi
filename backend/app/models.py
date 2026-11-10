@@ -500,6 +500,10 @@ class Tenant(Base):
     city: Mapped[str] = mapped_column(String(80), default="Multan")
     address: Mapped[str] = mapped_column(String(240), default="")
     phone: Mapped[str] = mapped_column(String(32), default="")
+    email: Mapped[str] = mapped_column(String(200), default="")
+    hours: Mapped[str] = mapped_column(String(120), default="")
+    visit_fee_pkr: Mapped[int] = mapped_column(Integer, default=0)  # 0 = the standard fee
+    emergency_24h: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(12), default="pending", index=True)  # pending | active | suspended
     created_at: Mapped[datetime] = mapped_column(DateTime)
 

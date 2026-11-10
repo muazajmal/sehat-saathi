@@ -42,6 +42,11 @@ def add_transport_charge(db: Session, d: Dispatch, staff: str) -> Charge | None:
     return c
 
 
+def _hospital_fee(db: Session, case) -> int:
+    from .tenancy import visit_fee
+    return visit_fee(db, getattr(case, "hospital_id", 1) or 1)
+
+
 def add_visit_charge(db: Session, case_id: int, staff: str, amount: int | None, note: str) -> Charge:
     case = get_case(db, case_id)
     if case.status != "approved":
@@ -49,7 +54,7 @@ def add_visit_charge(db: Session, case_id: int, staff: str, amount: int | None, 
     if db.scalar(select(Charge).where(Charge.case_id == case.id, Charge.kind == "visit")):
         raise HTTPException(409, "This visit already has a fee.")
     c = Charge(case_id=case.id, kind="visit", description="Doctor's visit",
-               amount_pkr=amount if amount is not None else settings.visit_fee_pkr,
+               amount_pkr=amount if amount is not None else _hospital_fee(db, case),
                added_by=staff, note=note, created_at=now())
     db.add(c)
     audit(db, staff, "charge_added", f"Rs {c.amount_pkr} for the visit. {note}".strip(), case.id)

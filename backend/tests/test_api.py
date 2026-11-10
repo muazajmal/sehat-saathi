@@ -111,3 +111,16 @@ def test_demo_request():
         assert no_mail.status_code == 422
         bad = c.post("/api/leads", json={"name": "x", "clinic": "", "phone": "1"})
         assert bad.status_code == 422
+
+
+def test_hospital_settings_and_demo_inbox():
+    with client() as c:
+        tok = c.post("/api/auth/login", json={"phone": "03000000001", "password": "admin123", "portal": "staff"}).json()["token"]
+        h = {"Authorization": "Bearer " + tok}
+        before = c.get("/api/admin/hospital", headers=h).json()
+        body = {**{k: before[k] for k in ("name", "city", "address", "phone", "email", "hours", "emergency_24h")}, "visit_fee_pkr": 750}
+        assert c.put("/api/admin/hospital", json=body, headers=h).json()["fee_in_use_pkr"] == 750
+        assert c.get(f"/api/prices?h={before['slug']}").json()["visit_fee_pkr"] == 750
+        assert c.put("/api/admin/hospital", json={**body, "email": "bad"}, headers=h).status_code == 422
+        c.put("/api/admin/hospital", json={**body, "visit_fee_pkr": before["visit_fee_pkr"]}, headers=h)
+        assert c.get("/api/owner/leads").status_code == 401

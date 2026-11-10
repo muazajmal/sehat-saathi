@@ -34,6 +34,10 @@ NEW_COLUMNS = [
     ("elders", "blood_group", "VARCHAR(4) NOT NULL DEFAULT ''"),
     ("leads", "email", "VARCHAR(200) NOT NULL DEFAULT ''"),
     ("leads", "status", "VARCHAR(16) NOT NULL DEFAULT 'new'"),
+    ("tenants", "email", "VARCHAR(200) NOT NULL DEFAULT ''"),
+    ("tenants", "hours", "VARCHAR(120) NOT NULL DEFAULT ''"),
+    ("tenants", "visit_fee_pkr", "INTEGER NOT NULL DEFAULT 0"),
+    ("tenants", "emergency_24h", "BOOLEAN NOT NULL DEFAULT FALSE"),
 ]
 
 
@@ -79,6 +83,12 @@ def slugify(name: str) -> str:
 def hid(who) -> int:
     """The hospital whose desk this is: the staff member's own, or #1 for the shared staff key."""
     return getattr(who, "hospital_id", None) or 1
+
+
+def visit_fee(db: Session, hospital_id: int) -> int:
+    """The hospital's own visit fee, or the standard one if it hasn't set one."""
+    t = db.get(Tenant, hospital_id or 1)
+    return t.visit_fee_pkr if t is not None and (t.visit_fee_pkr or 0) > 0 else settings.visit_fee_pkr
 
 
 def name_of(db: Session, hospital_id: int) -> str:

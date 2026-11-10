@@ -44,7 +44,7 @@ export default function Team() {
       const a = await api.addStaff(form);
       setNote(
         a.role === "doctor"
-          ? `${a.name} can now log in with ${a.phone}. Appointment slots for the next 6 days were added.`
+          ? `${a.name} can now log in with ${a.phone}. Appointment slots were added a week ahead and renew automatically.`
           : `${a.name} can now log in as an admin.`,
       );
       setForm({ ...form, name: "", phone: "", password: "" });

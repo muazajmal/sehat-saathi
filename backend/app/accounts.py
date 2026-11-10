@@ -1,5 +1,6 @@
 """Login, patient sign-up, the patient's own requests, and the admin's team page."""
 import os
+import re
 from datetime import timedelta
 from typing import Literal
 
@@ -210,6 +211,50 @@ def list_staff(role: Literal["staff", "patient"] = "staff", me_: Account = Depen
         phones = select(Patient.phone).join(Case, Case.patient_id == Patient.id).where(Case.hospital_id == h)
         q = select(Account).where(Account.role == "patient", Account.phone.in_(phones))
     return [out(a) for a in db.scalars(q.order_by(Account.role, Account.name))]
+
+
+class HospitalSettingsIn(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    city: str = Field(default="", max_length=80)
+    address: str = Field(default="", max_length=240)
+    phone: str = Field(default="", max_length=32)
+    email: str = Field(default="", max_length=200)
+    hours: str = Field(default="", max_length=120)
+    visit_fee_pkr: int = Field(default=0, ge=0, le=100000)
+    emergency_24h: bool = False
+
+
+def hospital_settings_out(db: Session, t: Tenant) -> dict:
+    return {"id": t.id, "slug": t.slug, "name": t.name, "city": t.city or "", "address": t.address or "",
+            "phone": t.phone or "", "email": t.email or "", "hours": t.hours or "",
+            "visit_fee_pkr": t.visit_fee_pkr or 0, "emergency_24h": bool(t.emergency_24h),
+            "standard_fee_pkr": settings.visit_fee_pkr, "fee_in_use_pkr": tenancy.visit_fee(db, t.id),
+            "patient_link": f"{settings.frontend_url}/patient?h={t.slug}"}
+
+
+@router.get("/admin/hospital")
+def get_hospital(me_: Account = Depends(auth.admin_only), db: Session = Depends(get_db)):
+    """The hospital's own details, as patients and staff see them."""
+    tenancy.ensure_default(db)
+    return hospital_settings_out(db, db.get(Tenant, me_.hospital_id or 1))
+
+
+@router.put("/admin/hospital")
+def save_hospital(body: HospitalSettingsIn, me_: Account = Depends(auth.admin_only), db: Session = Depends(get_db)):
+    tenancy.ensure_default(db)
+    t = db.get(Tenant, me_.hospital_id or 1)
+    email = body.email.strip().lower()
+    if email and not re.match(r"^[^@\s]{1,64}@[^@\s]{1,130}\.[a-zA-Z]{2,24}$", email):
+        raise HTTPException(422, "Enter a valid email address, like reception@gmail.com")
+    new_name = body.name.strip()
+    if new_name != t.name:  # staff cards show the hospital name
+        for a in db.scalars(select(Account).where(Account.hospital_id == t.id, Account.role.in_(auth.STAFF_ROLES))):
+            a.hospital = new_name
+    t.name, t.city, t.address = new_name, body.city.strip(), body.address.strip()
+    t.phone = body.phone.strip()  # may be a landline, so keep it as typed
+    t.email, t.hours, t.visit_fee_pkr, t.emergency_24h = email, body.hours.strip(), body.visit_fee_pkr, body.emergency_24h
+    db.commit()
+    return hospital_settings_out(db, t)
 
 
 @router.get("/admin/summary")

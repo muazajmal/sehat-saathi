@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from . import accounts, auth, community, elder_sos, emails, ops, tenancy, billing, dispatch, members, patient, services, summary, transport
 from .config import settings
 from .db import Base, engine, get_db
-from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
+from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot, Tenant
 from .schemas import (
     TranscribeIn,
     AmbulanceIn,
@@ -423,11 +423,16 @@ def responder_trip(d: int, t: str, db: Session = Depends(get_db)):
 # ---------- Pay after service ----------
 
 @app.get("/api/prices", response_model=PricesOut)
-def prices():
-    """Published prices, so patients can see them before agreeing to anything."""
+def prices(h: str = "", db: Session = Depends(get_db)):
+    """Published prices, so patients can see them before agreeing to anything. `h` = a hospital's link name."""
+    fee = settings.visit_fee_pkr
+    if h:
+        t = db.scalar(select(Tenant).where(Tenant.slug == h))
+        if t is not None:
+            fee = tenancy.visit_fee(db, t.id)
     return {"transport_base_pkr": settings.transport_base_pkr,
             "transport_per_km_pkr": settings.transport_per_km_pkr,
-            "visit_fee_pkr": settings.visit_fee_pkr}
+            "visit_fee_pkr": fee}
 
 
 @app.get("/api/cases/{case_id}/charges", response_model=list[ChargeOut])
