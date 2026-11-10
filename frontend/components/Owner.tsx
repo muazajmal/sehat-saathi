@@ -11,6 +11,80 @@ interface TenantRow {
   status: "pending" | "active" | "suspended"; created_at: string; staff: number; cases_30d: number; admin: string;
 }
 
+interface LeadRow {
+  id: number; name: string; clinic: string; city: string; phone: string; email: string; size: string;
+  status: "new" | "contacted" | "pilot" | "closed"; created_at: string;
+}
+
+const LEAD_NEXT: Record<LeadRow["status"], { to: LeadRow["status"]; label: string } | null> = {
+  new: { to: "contacted", label: "Mark contacted" },
+  contacted: { to: "pilot", label: "Start pilot" },
+  pilot: { to: "closed", label: "Close" },
+  closed: null,
+};
+const LEAD_LVL: Record<LeadRow["status"], string> = { new: "alert", contacted: "watch", pilot: "sent", closed: "" };
+
+function waLink(phone: string) {
+  const d = phone.replace(/\D/g, "");
+  return "https://wa.me/" + (d.startsWith("0") ? "92" + d.slice(1) : d);
+}
+
+/** Clinics that booked a demo on the website: call, WhatsApp or email them, and track each one to a pilot. */
+function DemoRequests() {
+  const [leads, setLeads] = useState<LeadRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [show, setShow] = useState<"open" | "all">("open");
+  const load = useCallback(() => apiCall<LeadRow[]>("/api/owner/leads").then(setLeads).catch((e) => setError(e instanceof Error ? e.message : String(e))), []);
+  useEffect(() => { load(); }, [load]);
+  const move = async (id: number, status: LeadRow["status"]) => {
+    try {
+      await apiCall(`/api/owner/leads/${id}/status?status=${status}`, { method: "POST" });
+      load();
+    } catch (x) {
+      setError(x instanceof ApiError ? x.message : String(x));
+    }
+  };
+  const fresh = leads?.filter((l) => l.status === "new").length ?? 0;
+  const list = (leads ?? []).filter((l) => show === "all" || l.status !== "closed");
+  return (
+    <section className="owner-leads">
+      <h2>Demo requests {fresh > 0 && <span className="lvl alert">{fresh} new</span>}</h2>
+      <p className="muted">
+        Clinics that pressed &quot;Book a demo&quot; on the website. Each one got a confirmation email.{" "}
+        <button className="chip-btn" onClick={() => setShow(show === "open" ? "all" : "open")}>{show === "open" ? "Show closed too" : "Hide closed"}</button>
+      </p>
+      {error && <div className="error">{error}</div>}
+      {leads === null ? <p className="muted">Loading…</p> : list.length === 0 ? (
+        <p className="empty">No demo requests yet. They appear here the moment a clinic books one.</p>
+      ) : (
+        <ul className="team-list owner-list">
+          {list.map((l) => {
+            const next = LEAD_NEXT[l.status];
+            return (
+              <li key={l.id} className={l.status}>
+                <div className="who">
+                  <b>{l.clinic} <span className={`lvl ${LEAD_LVL[l.status]}`}>{l.status}</span></b>
+                  <small>
+                    {l.name} · {l.city || "city not given"} · {l.size ? `${l.size} doctors` : "size not given"} ·{" "}
+                    {new Date(l.created_at).toLocaleString("en-PK", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                  </small>
+                  <small>
+                    <a href={`tel:${l.phone}`}>{l.phone}</a> · <a href={waLink(l.phone)} target="_blank" rel="noreferrer">WhatsApp</a>
+                    {l.email && <> · <a href={`mailto:${l.email}?subject=${encodeURIComponent("Your Sehat Saathi demo")}`}>{l.email}</a></>}
+                  </small>
+                </div>
+                <div className="acts">
+                  {next && <button className={l.status === "new" ? "btn btn-primary" : "chip-btn"} onClick={() => move(l.id, next.to)}>{next.label}</button>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 /** The Sehat Saathi owner: approve hospitals that apply, pause any of them. First visit: claim the owner account. */
 export default function Owner() {
   const { session, ready, save, logout } = useSession();
@@ -107,6 +181,7 @@ export default function Owner() {
           </li>
         ))}
       </ul>
+      <DemoRequests />
     </main>
   );
 }

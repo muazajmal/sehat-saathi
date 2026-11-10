@@ -2441,3 +2441,11 @@ a.sslot:hover {
 .welcome-portals .wp.elder { border-color: rgba(255, 122, 131, 0.55); background: rgba(255, 92, 105, 0.08); }
 .welcome-portals .wp:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 .welcome[dir="rtl"] .welcome-portals .wp b, .welcome[dir="rtl"] .welcome-portals .wp small { font-family: var(--urdu); line-height: 1.8; }
+
+/* Owner: demo requests inbox */
+.owner-leads { display: grid; gap: 10px; margin-top: 18px; }
+.owner-leads h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 1.25rem; }
+.owner-leads .who small { display: block; overflow-wrap: anywhere; }
+.owner-leads .who a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.owner-list li.new { border-color: #f5b14c; }
+.owner-list li.closed { opacity: 0.6; }

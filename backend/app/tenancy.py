@@ -33,6 +33,7 @@ NEW_COLUMNS = [
     ("elders", "allergies", "VARCHAR(200) NOT NULL DEFAULT ''"),
     ("elders", "blood_group", "VARCHAR(4) NOT NULL DEFAULT ''"),
     ("leads", "email", "VARCHAR(200) NOT NULL DEFAULT ''"),
+    ("leads", "status", "VARCHAR(16) NOT NULL DEFAULT 'new'"),
 ]
 
 

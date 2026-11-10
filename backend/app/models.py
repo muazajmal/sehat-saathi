@@ -97,6 +97,7 @@ class Lead(Base):
     phone: Mapped[str] = mapped_column(String(32))
     email: Mapped[str] = mapped_column(String(200), default="")
     size: Mapped[str] = mapped_column(String(40), default="")
+    status: Mapped[str] = mapped_column(String(16), default="new")  # new | contacted | pilot | closed
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
 

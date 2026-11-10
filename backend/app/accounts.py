@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from . import auth, patient as patient_view, tenancy
 from .config import settings
 from .db import get_db
-from .models import Account, Case, Patient, Slot, Tenant
+from .models import Account, Case, Lead, Patient, Slot, Tenant
 from .services import now
 
 router = APIRouter(prefix="/api")
@@ -353,6 +353,25 @@ def owner_claim(body: OwnerClaimIn, request: Request, db: Session = Depends(get_
 @router.get("/owner/tenants")
 def owner_tenants(_: Account = Depends(auth.owner_only), db: Session = Depends(get_db)):
     return [tenant_out(db, t) for t in db.scalars(select(Tenant).order_by(Tenant.status != "pending", Tenant.id))]
+
+
+@router.get("/owner/leads")
+def owner_leads(_: Account = Depends(auth.owner_only), db: Session = Depends(get_db)):
+    """Clinics that asked for a demo on the website, newest first."""
+    rows = db.scalars(select(Lead).order_by(Lead.created_at.desc()).limit(200)).all()
+    return [{"id": r.id, "name": r.name, "clinic": r.clinic, "city": r.city, "phone": r.phone, "email": r.email or "",
+             "size": r.size, "status": r.status or "new", "created_at": r.created_at} for r in rows]
+
+
+@router.post("/owner/leads/{lead_id}/status")
+def owner_lead_status(lead_id: int, status: Literal["new", "contacted", "pilot", "closed"],
+                      _: Account = Depends(auth.owner_only), db: Session = Depends(get_db)):
+    lead = db.get(Lead, lead_id)
+    if lead is None:
+        raise HTTPException(404, "Demo request not found.")
+    lead.status = status
+    db.commit()
+    return {"ok": True, "status": status}
 
 
 @router.post("/owner/tenants/{tenant_id}/status")
