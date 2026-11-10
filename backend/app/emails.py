@@ -122,6 +122,17 @@ def reset_email(name: str, link: str) -> tuple[str, str]:
                                                      "You got this because a password reset was asked for on Sehat Saathi.")
 
 
+def lead_email(name: str, clinic: str) -> tuple[str, str]:
+    e = html.escape
+    en = (f"<p>Assalam-o-Alaikum {e(name)},</p><p>Thank you for asking for a Sehat Saathi demo for <b>{e(clinic)}</b>. "
+          "We will contact you within one working day to set up a 20-minute walkthrough with your own doctors' timings.</p>"
+          "<p>Your free 30-day pilot needs no card and no setup fee.</p>")
+    ur = (f"<p>السلام علیکم {e(name)}،</p><p><b>{e(clinic)}</b> کے لیے صحت ساتھی ڈیمو کی درخواست کا شکریہ۔ "
+          "ہم ایک کاروباری دن کے اندر آپ سے رابطہ کریں گے۔</p>")
+    return "Your Sehat Saathi demo request", shell("Demo request received", en, ur, None,
+                                                   "You got this because you asked for a demo on Sehat Saathi.")
+
+
 def build(db: Session, case: Case, kind: str, link: str) -> tuple[str, str]:
     from . import tenancy
 

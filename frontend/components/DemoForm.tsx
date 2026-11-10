@@ -15,6 +15,7 @@ export default function DemoForm() {
       clinic: String(f.get("clinic") ?? "").trim(),
       city: String(f.get("city") ?? "").trim(),
       phone: String(f.get("phone") ?? "").trim(),
+      email: String(f.get("email") ?? "").trim(),
       size: String(f.get("size") ?? ""),
     };
     setState("sending");
@@ -32,7 +33,7 @@ export default function DemoForm() {
     return (
       <div className="demo-form demo-sent" role="status">
         <h3>Demo requested</h3>
-        <p>We&apos;ll call you within one working day to set up a 20-minute walkthrough with your own clinic&apos;s schedule.</p>
+        <p>We&apos;ll call you within one working day to set up a 20-minute walkthrough with your own clinic&apos;s schedule. A confirmation is on its way to your Gmail.</p>
       </div>
     );
   }
@@ -65,6 +66,10 @@ export default function DemoForm() {
       <div className="field">
         <label htmlFor="phone">WhatsApp number</label>
         <input id="phone" name="phone" required minLength={7} type="tel" autoComplete="tel" placeholder="0300 1234567" />
+      </div>
+      <div className="field">
+        <label htmlFor="email">Gmail</label>
+        <input id="email" name="email" required type="email" autoComplete="email" inputMode="email" placeholder="clinic@gmail.com" />
       </div>
       {error && <div className="error">{error}</div>}
       <button className="btn btn-mint btn-lg" type="submit" disabled={state === "sending"}>

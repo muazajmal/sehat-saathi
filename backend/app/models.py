@@ -95,6 +95,7 @@ class Lead(Base):
     clinic: Mapped[str] = mapped_column(String(160))
     city: Mapped[str] = mapped_column(String(80), default="")
     phone: Mapped[str] = mapped_column(String(32))
+    email: Mapped[str] = mapped_column(String(200), default="")
     size: Mapped[str] = mapped_column(String(40), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime)
 

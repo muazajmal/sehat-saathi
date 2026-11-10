@@ -105,7 +105,9 @@ def test_schedule_shows_patient_on_held_slot():
 
 def test_demo_request():
     with client() as c:
-        r = c.post("/api/leads", json={"name": "Dr. Imran", "clinic": "Care Clinic", "phone": "03001234567"})
+        r = c.post("/api/leads", json={"name": "Dr. Imran", "clinic": "Care Clinic", "phone": "03001234567", "email": "imran@gmail.com"})
         assert r.status_code == 201 and r.json()["clinic"] == "Care Clinic"
+        no_mail = c.post("/api/leads", json={"name": "Dr. Imran", "clinic": "Care Clinic", "phone": "03001234567", "email": "not-an-email"})
+        assert no_mail.status_code == 422
         bad = c.post("/api/leads", json={"name": "x", "clinic": "", "phone": "1"})
         assert bad.status_code == 422

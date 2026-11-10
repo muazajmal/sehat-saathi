@@ -491,6 +491,12 @@ def create_lead(body: LeadIn, request: Request, db: Session = Depends(get_db)):
     db.add(lead)
     db.commit()
     logging.getLogger("sehat.leads").info("New demo request: %s, %s", lead.name, lead.clinic)
+    try:  # confirmation to the clinic's Gmail; never block the request on email
+        from . import emails
+        subject, html_body = emails.lead_email(lead.name, lead.clinic)
+        emails.queue(db, f"lead:{lead.id}", lead.email, subject, html_body)
+    except Exception as e:
+        logging.getLogger("sehat.leads").warning("lead email failed: %s", e)
     return lead
 
 

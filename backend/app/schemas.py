@@ -1,7 +1,8 @@
+import re
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class QuickIn(BaseModel):
@@ -128,7 +129,16 @@ class LeadIn(BaseModel):
     clinic: str = Field(min_length=2, max_length=160)
     city: str = Field(default="", max_length=80)
     phone: str = Field(min_length=7, max_length=32)
+    email: str = Field(min_length=6, max_length=200)
     size: str = Field(default="", max_length=40)
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r"^[^@\s]{1,64}@[^@\s]{1,130}\.[a-zA-Z]{2,24}$", v):
+            raise ValueError("Enter a valid Gmail or email address, like name@gmail.com")
+        return v
 
 
 class LeadOut(BaseModel):

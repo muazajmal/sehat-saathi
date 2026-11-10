@@ -445,7 +445,7 @@ export const api = {
   cases: (status: CaseStatus | "all") => call<Case[]>(`/api/cases?status=${status}`),
   slots: (days = 3) => call<Slot[]>(`/api/slots?status=open&days=${days}`),
   schedule: (day: string) => call<ScheduleSlot[]>(`/api/schedule?day=${day}`),
-  lead: (body: { name: string; clinic: string; city: string; phone: string; size: string }) =>
+  lead: (body: { name: string; clinic: string; city: string; phone: string; email: string; size: string }) =>
     call<{ id: number }>("/api/leads", { method: "POST", body: JSON.stringify(body) }),
   audit: (caseId: number) => call<AuditEvent[]>(`/api/audit?case_id=${caseId}`),
   intake: (phone: string, name: string, message: string, quick?: object, email?: string, hospital?: string) =>
