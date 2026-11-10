@@ -564,15 +564,7 @@ def add_elder(body: ElderIn, a: Account = Depends(auth.current_account), db: Ses
 @router.get("/me/elders")
 def my_elders(a: Account = Depends(auth.current_account), db: Session = Depends(get_db)):
     tick(db)
-    from . import elder_sos
-
-    out = []
-    for e in db.scalars(select(Elder).where(Elder.family_account_id == a.id, Elder.active.is_(True))):
-        s = elder_status(db, e)
-        s["sos"] = elder_sos.ev_out(db, elder_sos.latest(db, e.id))
-        s["has_pin"] = bool(e.pin_hash)
-        out.append(s)
-    return out
+    return [elder_status(db, e) for e in db.scalars(select(Elder).where(Elder.family_account_id == a.id, Elder.active.is_(True)))]
 
 
 @router.delete("/me/elders/{elder_id}")
@@ -632,9 +624,6 @@ def tick(db: Session) -> dict:
     """Send what has fallen due. Safe to run any number of times: each message has a one-time key."""
     t, day = now(), today()
     sent = {"medicine": 0, "elder_reminder": 0, "elder_missed": 0}
-    from . import elder_sos
-
-    sent["sos_escalated"] = elder_sos.check(db)  # emergency button: no answer within 1 minute
     from . import ops  # appointment reminders (fewer no-shows)
 
     sent.update({f"appointment_{k}": v for k, v in ops.appointment_reminders(db).items()})

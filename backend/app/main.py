@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import accounts, auth, community, elder_sos, emails, ops, tenancy, billing, dispatch, members, patient, services, transport
+from . import accounts, auth, community, emails, ops, tenancy, billing, dispatch, members, patient, services, transport
 from .config import settings
 from .db import Base, engine, get_db
 from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
@@ -104,7 +104,6 @@ app = FastAPI(
 )
 app.include_router(accounts.router)
 app.include_router(community.router)
-app.include_router(elder_sos.router)
 app.include_router(emails.router)
 app.include_router(ops.router)
 app.add_middleware(
@@ -219,7 +218,6 @@ def list_cases(
     h: int = Depends(H),
     db: Session = Depends(get_db),
 ):
-    elder_sos.check(db)  # the desk polls often, so overdue emergency-button alarms escalate on time
     q = select(Case).where(Case.hospital_id == h).order_by(Case.created_at.desc()).limit(limit)
     if status != "all":
         q = q.where(Case.status == status)

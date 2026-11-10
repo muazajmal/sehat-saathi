@@ -5,7 +5,7 @@ which keeps SQLite and Postgres behaving the same.
 """
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -409,49 +409,6 @@ class Elder(Base):
     token: Mapped[str] = mapped_column(String(64), index=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
-    # Elder sign-in and the medical card the hospital sees when the emergency button is pressed.
-    pin_hash: Mapped[str] = mapped_column(String(200), default="", server_default="")
-    age: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
-    conditions: Mapped[str] = mapped_column(String(300), default="", server_default="")
-    medicines: Mapped[str] = mapped_column(String(300), default="", server_default="")
-    allergies: Mapped[str] = mapped_column(String(200), default="", server_default="")
-    blood_group: Mapped[str] = mapped_column(String(4), default="", server_default="")
-
-
-class ElderGuardian(Base):
-    """An extra guardian (son, daughter, neighbour) told when the elder presses the emergency button.
-    The family member who added the elder is always a guardian too."""
-
-    __tablename__ = "elder_guardians"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    elder_id: Mapped[int] = mapped_column(ForeignKey("elders.id"), index=True)
-    name: Mapped[str] = mapped_column(String(120))
-    relation: Mapped[str] = mapped_column(String(40), default="")
-    phone: Mapped[str] = mapped_column(String(32), default="")
-    email: Mapped[str] = mapped_column(String(200), default="")
-    token: Mapped[str] = mapped_column(String(64), index=True)
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime)
-
-
-class SosEvent(Base):
-    """One press of the elder's emergency button. waiting -> okay | help | no_response -> resolved."""
-
-    __tablename__ = "sos_events"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    elder_id: Mapped[int] = mapped_column(ForeignKey("elders.id"), index=True)
-    status: Mapped[str] = mapped_column(String(16), index=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime)
-    respond_by: Mapped[datetime] = mapped_column(DateTime, index=True)
-    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    escalated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    resolved_by: Mapped[str] = mapped_column(String(120), default="")
-    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
-    lng: Mapped[float | None] = mapped_column(Float, nullable=True)
-    case_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class Checkin(Base):

@@ -23,19 +23,6 @@ const W = {
     alerts: "Area alerts",
     meds: "Medicine reminders",
     family: "Family check-ins",
-    portals: "Choose your portal",
-    pElder: "Elder app",
-    pElderSub: "One big help button",
-    pFamily: "Family & guardians",
-    pFamilySub: "Get alerts for parents",
-    pPatient: "Patient",
-    pPatientSub: "Requests and bookings",
-    pStaff: "Hospital & doctors",
-    pStaffSub: "Desk, cases, team",
-    pAmb: "Ambulance driver",
-    pAmbSub: "Join and take trips",
-    pDonor: "Blood donor",
-    pDonorSub: "Help save a life",
     cont: (n: string) => `Continue as ${n}`,
     notYou: "Not you? Log out",
     sos: "Emergency? Chest pain, can't breathe, unconscious:",
@@ -57,19 +44,6 @@ const W = {
     alerts: "علاقے کے الرٹس",
     meds: "دوا کی یاد دہانی",
     family: "گھر والوں کی خیریت",
-    portals: "اپنا پورٹل چنیں",
-    pElder: "بزرگوں کی ایپ",
-    pElderSub: "مدد کا ایک بڑا بٹن",
-    pFamily: "گھر والے اور سرپرست",
-    pFamilySub: "والدین کے الرٹ پائیں",
-    pPatient: "مریض",
-    pPatientSub: "درخواستیں اور وقت",
-    pStaff: "ہسپتال اور ڈاکٹر",
-    pStaffSub: "ڈیسک، کیسز، ٹیم",
-    pAmb: "ایمبولینس ڈرائیور",
-    pAmbSub: "شامل ہوں، سفر لیں",
-    pDonor: "خون کا عطیہ",
-    pDonorSub: "زندگی بچائیں",
     cont: (n: string) => `${n} کے طور پر جاری رکھیں`,
     notYou: "آپ نہیں؟ لاگ آؤٹ کریں",
     sos: "ایمرجنسی؟ سینے میں درد، سانس میں تکلیف، بے ہوشی:",
@@ -137,26 +111,28 @@ export default function Welcome() {
           <b>{t.help}</b>
           <small>{t.helpSub}</small>
         </Link>
-        <h2 className="welcome-ph">{t.portals}</h2>
-        <nav className="welcome-portals" aria-label={t.portals}>
-          <Link href="/elder" className="wp elder"><span aria-hidden>👴</span><b>{t.pElder}</b><small>{t.pElderSub}</small></Link>
-          <Link href="/patient/family" className="wp"><span aria-hidden>👨‍👩‍👧</span><b>{t.pFamily}</b><small>{t.pFamilySub}</small></Link>
-          <Link href={session?.account.role === "patient" ? "/patient/home" : "/login"} className="wp"><span aria-hidden>🧑</span><b>{t.pPatient}</b><small>{t.pPatientSub}</small></Link>
-          <Link href={session && session.account.role !== "patient" ? "/desk" : "/login?as=staff"} className="wp"><span aria-hidden>🏥</span><b>{t.pStaff}</b><small>{t.pStaffSub}</small></Link>
-          <Link href="/ambulance/join" className="wp"><span aria-hidden>🚑</span><b>{t.pAmb}</b><small>{t.pAmbSub}</small></Link>
-          <Link href="/donate" className="wp"><span aria-hidden>🩸</span><b>{t.pDonor}</b><small>{t.pDonorSub}</small></Link>
-        </nav>
         {!session && (
-          <button type="button" className="link-btn welcome-new" onClick={() => router.push("/login?new=1")}>
-            {t.newAcc}
-          </button>
+          <>
+            <Link className="welcome-btn" href="/login">
+              <b>{t.patient}</b>
+              <small>{t.patientSub}</small>
+            </Link>
+            <Link className="welcome-btn quiet" href="/login?as=staff">
+              <b>{t.staff}</b>
+            </Link>
+            <button type="button" className="link-btn welcome-new" onClick={() => router.push("/login?new=1")}>
+              {t.newAcc}
+            </button>
+          </>
         )}
         <Link className="welcome-btn quiet" href="/first-aid">
           <b>🩺 {t.firstAid}</b>
         </Link>
         <nav className="welcome-tiles">
+          <Link href="/donate">🩸 {t.donate}</Link>
           <Link href="/alerts">📢 {t.alerts}</Link>
           <Link href="/patient/medicines">💊 {t.meds}</Link>
+          <Link href="/patient/family">👵 {t.family}</Link>
         </nav>
       </section>
 
