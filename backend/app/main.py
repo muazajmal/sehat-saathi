@@ -77,6 +77,10 @@ def _init_db():
         tenancy.ensure_default(db)
         tenancy.tidy_phones(db)
         accounts.ensure_accounts(db)
+        try:
+            accounts.renew_doctor_slots(db)
+        except Exception:
+            logging.getLogger("sehat").exception("Slot renewal failed")
         if os.getenv("SEED_DEMO", "1") == "1":
             community.seed_community(db)
 
@@ -259,6 +263,22 @@ def log_callback(case_id: int, body: CallbackIn, who=Depends(staff_only), db: Se
 
 # ---------- Slots ----------
 
+_last_renew = [0.0]
+
+
+def _renew_slots(db: Session):
+    """At most once an hour per server: top up doctors' calendars (cheap, and safe to repeat)."""
+    import time
+    if time.time() - _last_renew[0] < 3600:
+        return
+    _last_renew[0] = time.time()
+    try:
+        accounts.renew_doctor_slots(db)
+    except Exception:
+        db.rollback()
+        logging.getLogger("sehat").exception("Slot renewal failed")
+
+
 @app.get("/api/slots", response_model=list[SlotOut])
 def list_slots(
     status: Literal["open", "held", "booked", "all"] = "open",
@@ -288,6 +308,7 @@ def add_slot(body: SlotIn, h: int = Depends(H), db: Session = Depends(get_db)):
 
 @app.get("/api/schedule", response_model=list[ScheduleSlot])
 def schedule(day: date | None = None, h: int = Depends(H), db: Session = Depends(get_db)):
+    _renew_slots(db)
     """Every slot for one day, with the patient attached to held or booked ones."""
     d = day or services.now().date()
     start = datetime.combine(d, datetime.min.time())

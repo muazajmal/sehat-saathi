@@ -174,15 +174,30 @@ def client_ip(request: Request) -> str:
     return (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "") or "?").split(",")[0].strip()
 
 
-def add_doctor_slots(db: Session, doctor: str, specialty: str, days: int = 6, hospital_id: int = 1):
+def add_doctor_slots(db: Session, doctor: str, specialty: str, days: int = 6, hospital_id: int = 1, from_day: int = 0):
     start = now().replace(minute=0, second=0, microsecond=0)
-    for d in range(days):
+    for d in range(from_day, from_day + days):
         day = (start + timedelta(days=d)).replace(hour=9)
         for i in range(0, 48, 3):  # 9:00 to 21:00, one slot every 45 min
             t = day + timedelta(minutes=15 * i)
             if t > now():
                 db.add(Slot(doctor=doctor, specialty=specialty or "general", starts_at=t, minutes=15, hospital_id=hospital_id))
     db.commit()
+
+
+def renew_doctor_slots(db: Session, ahead_days: int = 6):
+    """Keep every active doctor bookable a week ahead, in every hospital, so no doctor's calendar runs dry."""
+    today = now().date()
+    off = {(a.name, a.hospital_id) for a in db.scalars(select(Account).where(Account.role == "doctor", Account.active.is_(False)))}
+    rows = db.execute(select(Slot.doctor, Slot.hospital_id, func.max(Slot.specialty), func.max(Slot.starts_at))
+                      .group_by(Slot.doctor, Slot.hospital_id)).all()
+    for doctor, h, specialty, last in rows:
+        if (doctor, h) in off or last is None:
+            continue
+        have = (last.date() - today).days
+        if have < ahead_days - 1:
+            start = max(have + 1, 0)
+            add_doctor_slots(db, doctor, specialty or "general", ahead_days - start, hospital_id=h, from_day=start)
 
 
 @router.get("/admin/accounts", response_model=list[AccountOut])
