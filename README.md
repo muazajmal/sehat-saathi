@@ -24,6 +24,16 @@ Elders living alone get a one-button HELP app that alerts guardians if they don'
 Then the patient can ask for an appointment with the suggested specialist in one tap. Without an AI key the summary
 falls back to copying the flagged result lines word for word, so it never fails in a demo.
 
+## Built for real hospitals
+
+| For | What they get |
+| --- | --- |
+| **Hospital admin** (`/desk/settings`) | Own name, address, reception phone and Gmail, opening hours, 24-hour emergency flag and visit fee, with a live "what patients see" preview and a shareable patient link |
+| **Doctors** | A week of bookable appointment times that renews automatically, so no calendar runs dry |
+| **Sehat Saathi owner** (`/owner`) | Approves hospitals, and a demo-requests inbox (call, WhatsApp or email each clinic, then track it new → contacted → pilot → closed) |
+| **Clinics on the website** | "Book a demo" asks for their Gmail and sends a bilingual confirmation email straight away |
+| **Everyone** | Friendly error and loading screens with 1122 always one tap away, security headers, and a branded preview card when the link is shared |
+
 ---
 
 Original channel: Urdu WhatsApp triage and booking for Pakistani clinics.
