@@ -7,7 +7,9 @@ import { ApiError } from "../lib/api";
 import { cx, fmtTime, type ElderT } from "../lib/community";
 import type { UiLang } from "../lib/patientText";
 import { useSession } from "../lib/useSession";
+import ElderSetup from "./ElderSetup";
 import PatientFrame, { L } from "./PatientFrame";
+import SosBanner from "./SosBanner";
 
 export default function FamilyView() {
   return <PatientFrame>{(lang) => <Family lang={lang} />}</PatientFrame>;
@@ -29,6 +31,8 @@ function Family({ lang }: { lang: UiLang }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [setup, setSetup] = useState<number | null>(null);
+  const alarm = !!list?.some((e) => e.sos && ["waiting", "no_response", "help"].includes(e.sos.status));
 
   const load = useCallback(() => cx.elders().then(setList).catch((e) => setError(e instanceof Error ? e.message : String(e))), []);
   useEffect(() => {
@@ -36,20 +40,20 @@ function Family({ lang }: { lang: UiLang }) {
     if (!session) router.replace("/login");
     else {
       load();
-      const id = setInterval(load, 15000);
+      const id = setInterval(load, alarm ? 4000 : 15000);
       return () => clearInterval(id);
     }
-  }, [ready, session, router, load]);
+  }, [ready, session, router, load, alarm]);
 
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
   return (
     <>
       <section className="p-card">
-        <h1>{L(lang, "Family check-ins", "گھر والوں کی خیریت")}</h1>
+        <h1>{L(lang, "Family & guardians", "گھر والے اور سرپرست")}</h1>
         <p className="p-muted">
-          {L(lang, "For a parent or grandparent living alone. Every day they tap \"I'm okay\". If they don't, or they press \"I need help\", you're told at once.",
-            "اکیلے رہنے والے والدین یا بزرگوں کے لیے۔ وہ روز \"میں ٹھیک ہوں\" دبائیں گے۔ اگر نہ دبائیں، یا \"مجھے مدد چاہیے\" دبائیں، تو آپ کو فوراً پتہ چلے گا۔")}
+          {L(lang, "For a parent or grandparent living alone. They get a big HELP button on their phone: if they press it and don't answer within 1 minute, every guardian is told to check on them. They also tap \"I'm okay\" once a day.",
+            "اکیلے رہنے والے والدین یا بزرگوں کے لیے۔ ان کے فون پر مدد کا بڑا بٹن ہوگا: اگر دبانے کے بعد 1 منٹ تک جواب نہ دیں تو ہر سرپرست کو خیریت معلوم کرنے کا کہا جائے گا۔ وہ روز ایک بار \"میں ٹھیک ہوں\" بھی دبائیں گے۔")}
         </p>
         {error && <div className="error">{error}</div>}
         <ul className="elder-list">
@@ -66,6 +70,10 @@ function Family({ lang }: { lang: UiLang }) {
                   </small>
                 </span>
               </div>
+              {e.sos && (
+                <SosBanner name={e.name} phone={e.phone} sos={e.sos} lang={lang}
+                           onHandled={async () => { await cx.familyHandled(e.id, e.sos!.id); await load(); }} />
+              )}
               <div className="elder-week" aria-label={L(lang, "Last 7 days", "پچھلے 7 دن")}>
                 {Array.from({ length: 7 }, (_, k) => {
                   const d = new Date();
@@ -84,7 +92,11 @@ function Family({ lang }: { lang: UiLang }) {
                 <button type="button" className="btn btn-quiet" onClick={() => { navigator.clipboard?.writeText(origin + e.link); setCopied(e.id); setTimeout(() => setCopied(null), 2000); }}>
                   {copied === e.id ? "✓" : L(lang, "Copy link", "لنک کاپی")}
                 </button>
+                <button type="button" className="btn btn-quiet" aria-expanded={setup === e.id} onClick={() => setSetup(setup === e.id ? null : e.id)}>
+                  🆘 {e.has_pin ? L(lang, "Emergency button", "ایمرجنسی بٹن") : L(lang, "Set up emergency button", "ایمرجنسی بٹن سیٹ کریں")}
+                </button>
               </div>
+              {setup === e.id && <ElderSetup elder={e} lang={lang} />}
             </li>
           ))}
         </ul>
