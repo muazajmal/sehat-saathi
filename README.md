@@ -1,6 +1,32 @@
 # Sehat Saathi — صحت ساتھی
 
-Urdu WhatsApp triage and booking for Pakistani clinics.
+**AI health helper for Pakistani communities and a front desk for hospitals.** Built for the TechSoc'26 AI Hackathon
+(theme: *AI with Purpose — Building Better Societies*) by Muaz Ajmal, FAST-NUCES Multan.
+
+- **Live:** https://sehat-saathi-eta.vercel.app/app · **Mystery Card (AI Summary Button):** https://sehat-saathi-eta.vercel.app/report
+- **MVP document:** [`docs/MVP-Document.md`](docs/MVP-Document.md)
+
+A patient speaks or types their problem in their own language (Urdu, Roman Urdu, Punjabi, Saraiki, Pashto, Sindhi,
+English and more). Gemini summarises it for the doctor, marks it **urgent / see today / routine** (danger-sign rules
+can only make it more urgent), holds a slot and replies in the patient's language. A named doctor approves every
+booking. Emergencies get a one-tap Call 1122, a first-aid video guide and GPS-based hospital and responder matching.
+Elders living alone get a one-button HELP app that alerts guardians if they don't answer within 1 minute.
+
+## Mystery Card 5: AI Summary Button → Report Samjhao (`/report`)
+
+| Card step | What the app does |
+| --- | --- |
+| 1. Pick long content | Paste a lab report, read a photo of one (Gemini), or load the example report |
+| 2. Choose summary style | **One line**, **3 bullets** or **Detailed**, in **English** or **Urdu**, with **Listen** |
+| 3. Generate summary | One press of **Summarize** → `POST /api/summarize` (Gemini 2.5 Flash) |
+| 4. Keep original meaning | **Meaning guard:** each point is linked to its report lines (tap to highlight), every number is checked against the report, and a changed or invented number turns the guard red |
+
+Then the patient can ask for an appointment with the suggested specialist in one tap. Without an AI key the summary
+falls back to copying the flagged result lines word for word, so it never fails in a demo.
+
+---
+
+Original channel: Urdu WhatsApp triage and booking for Pakistani clinics.
 
 > **Sehat Saathi never diagnoses and never confirms a booking. A doctor does.**
 
@@ -160,6 +186,8 @@ admin `0300 0000001` / `admin123`, doctor `0300 0000002` / `doctor123`, patient 
 | POST | `/api/cases/{id}/called` | Log the urgent call-back |
 | GET/POST | `/api/slots` | Open slots / add a slot |
 | GET | `/api/schedule?day=YYYY-MM-DD` | Every slot for a day, with the patient on held/booked ones |
+| POST | `/api/summarize` | Report Samjhao: one line / 3 bullets / detailed, EN + UR, with meaning guard |
+| POST | `/api/summarize/read-photo` | Photo of a report → text (Gemini) |
 | POST | `/api/leads` | "Book a demo" form on the website |
 | GET | `/api/stats`, `/api/audit` | Desk numbers and activity log |
 | GET/POST | `/webhook/whatsapp` | WhatsApp Cloud API verify + inbound text |
@@ -171,6 +199,7 @@ backend/
   app/main.py        routes
   app/services.py    business rules (hold, approve, reject, call-back)
   app/triage.py      Gemini + Urdu rules, safety merge
+  app/summary.py     Report Samjhao: AI summary + meaning guard (Mystery Card)
   app/notify.py      WhatsApp send + n8n escalation
   app/models.py      Patient, Slot, Case, AuditEvent
   app/seed.py        demo data
@@ -180,6 +209,7 @@ frontend/
   app/landing.css    marketing styles
   app/globals.css    design system + desk styles
   app/desk/          clinic desk and schedule
+  app/report/        Report Samjhao (Mystery Card: AI summary button)
   components/        PhoneDemo, Desk, Schedule, AppShell, DeskPreview, DemoForm, SiteNav, Logo
   lib/api.ts         typed API client
 n8n/README.md        how to wire voice notes and escalation calls

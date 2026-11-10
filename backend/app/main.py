@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import accounts, auth, community, elder_sos, emails, ops, tenancy, billing, dispatch, members, patient, services, transport
+from . import accounts, auth, community, elder_sos, emails, ops, tenancy, billing, dispatch, members, patient, services, summary, transport
 from .config import settings
 from .db import Base, engine, get_db
 from .models import AmbulanceMember, AuditEvent, Case, Charge, Dispatch, Lead, Patient, Responder, Slot
@@ -107,6 +107,7 @@ app.include_router(community.router)
 app.include_router(elder_sos.router)
 app.include_router(emails.router)
 app.include_router(ops.router)
+app.include_router(summary.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

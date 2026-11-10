@@ -1066,3 +1066,56 @@
 .sos-calm { font-size: 1.125rem; }
 .patient.guardian { display: grid; gap: 12px; align-content: start; }
 .patient.guardian .el-lang { margin-top: 12px; }
+
+/* ===== Report Samjhao (Mystery Card 5: AI Summary Button) ===== */
+.rs-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.patient .rs-text {
+  width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink); font: 0.875rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  resize: vertical; margin-bottom: 14px;
+}
+.rs-lang { align-items: center; margin-top: 10px; }
+.rs-lang .p-muted { margin: 0; }
+.rs-go { margin-top: 16px; width: 100%; }
+.rs-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rs-head h2 { margin: 0; }
+.rs-engine { font-size: 0.8125rem; padding: 4px 10px; border-radius: 999px; background: var(--teal-soft); color: var(--mint); }
+.rs-points { display: grid; gap: 10px; margin: 10px 0 14px; }
+.rs-pt {
+  display: flex; gap: 12px; align-items: flex-start; text-align: start; width: 100%; padding: 12px 14px;
+  border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  font: inherit; cursor: pointer;
+}
+.rs-pt.sel { border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint) inset; }
+.rs-points.one .rs-pt { font-size: 1.125rem; font-weight: 600; }
+.rs-mark {
+  flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 0.875rem; font-weight: 700;
+}
+.rs-mark.ok { background: var(--routine-bg); color: var(--routine); }
+.rs-mark.warn { background: var(--today-bg); color: var(--today); }
+.rs-mark.bad { background: var(--urgent-bg); color: var(--urgent); }
+.rs-body { display: grid; gap: 4px; min-width: 0; }
+.rs-h { font-size: 1rem; }
+.rs-src { display: flex; flex-wrap: wrap; gap: 4px; }
+.rs-src span { font-size: 0.75rem; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--muted); }
+.rs-flag { font-size: 0.8125rem; color: var(--urgent); font-weight: 600; }
+.rs-guard { margin: 14px 0; padding: 12px 14px; border-radius: 12px; border: 1px solid; }
+.rs-guard.ok { border-color: var(--routine); background: var(--routine-bg); }
+.rs-guard.warn { border-color: var(--today); background: var(--today-bg); }
+.rs-guard.bad { border-color: var(--urgent); background: var(--urgent-bg); }
+.rs-guard ul { margin: 6px 0 0; padding-inline-start: 18px; font-size: 0.875rem; }
+.rs-urg { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.rs-chip { padding: 4px 10px; border-radius: 999px; font-size: 0.8125rem; font-weight: 700; }
+.rs-chip.routine { background: var(--routine-bg); color: var(--routine); }
+.rs-chip.soon { background: var(--today-bg); color: var(--today); }
+.rs-chip.urgent { background: var(--urgent-bg); color: var(--urgent); }
+.rs-lines-h { margin-top: 18px; }
+.rs-lines {
+  list-style: none; margin: 0; padding: 0; max-height: 320px; overflow: auto; border: 1px solid var(--line);
+  border-radius: 12px; font: 0.8125rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.rs-lines li { display: flex; gap: 10px; padding: 4px 10px; border-bottom: 1px solid var(--line); }
+.rs-lines li:last-child { border-bottom: 0; }
+.rs-lines li.hl { background: var(--teal-soft); color: var(--ink); box-shadow: 3px 0 0 var(--mint) inset; }
+.rs-ln { color: var(--faint); min-width: 20px; text-align: end; }

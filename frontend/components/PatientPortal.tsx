@@ -93,6 +93,11 @@ export default function PatientPortal() {
   const clinic = useClinicName();
   const t = T[lang];
   const [message, setMessage] = useState("");
+  // Prefill from a link, e.g. Report Samjhao's "ask for an appointment" button.
+  useEffect(() => {
+    const m = new URLSearchParams(window.location.search).get("m");
+    if (m) setMessage(m.slice(0, 1000));
+  }, []);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);

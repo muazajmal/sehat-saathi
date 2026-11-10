@@ -22,6 +22,7 @@ const W = {
     donate: "Donate blood",
     alerts: "Area alerts",
     meds: "Medicine reminders",
+    report: "Understand my report (AI summary)",
     family: "Family check-ins",
     portals: "Choose your portal",
     pElder: "Elder app",
@@ -56,6 +57,7 @@ const W = {
     donate: "خون کا عطیہ",
     alerts: "علاقے کے الرٹس",
     meds: "دوا کی یاد دہانی",
+    report: "میری رپورٹ سمجھاؤ (AI خلاصہ)",
     family: "گھر والوں کی خیریت",
     portals: "اپنا پورٹل چنیں",
     pElder: "بزرگوں کی ایپ",
@@ -157,6 +159,7 @@ export default function Welcome() {
         <nav className="welcome-tiles">
           <Link href="/alerts">📢 {t.alerts}</Link>
           <Link href="/patient/medicines">💊 {t.meds}</Link>
+          <Link href="/report">📄 {t.report}</Link>
         </nav>
       </section>
 

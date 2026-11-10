@@ -5,7 +5,7 @@
 | --- | --- |
 | **Team** | Muaz Ajmal (solo) · FAST-NUCES Multan |
 | **Focus area** | 03 Local Services & Coordination (Clinics), with 04 Mutual Support (responders, blood donors, family check-ins) |
-| **Live MVP** | https://sehat-saathi-eta.vercel.app/app · staff login: https://sehat-saathi-eta.vercel.app/login · elder app: https://sehat-saathi-eta.vercel.app/elder |
+| **Live MVP** | https://sehat-saathi-eta.vercel.app/app · staff login: https://sehat-saathi-eta.vercel.app/login · elder app: https://sehat-saathi-eta.vercel.app/elder · **Mystery Card: https://sehat-saathi-eta.vercel.app/report** |
 | **Type** | Web app: opens in any browser on a phone or laptop, installs on the home screen like an app. One platform for many hospitals. |
 | **Demo video** | `sehat-saathi-demo.mp4` (3 min 49 s): every portal, location + Google Maps, booking + Gmail, elder emergency button, Mystery Card |
 | **Repository** | https://github.com/muazajmal/sehat-saathi |
@@ -69,7 +69,7 @@ get their own **elder app** with one big **HELP** button. **A named doctor appro
 | Prescriptions | **Gemini** reads a prescription photo into a list the patient checks | Medicine reminders without typing |
 | Area health | Spots an illness rising in a neighbourhood; **Gemini** drafts an Urdu + English notice | A doctor approves a ready draft before anyone sees it |
 | Location | Patient's GPS → right Multan government hospital (cardiology, children's, burns, general) + nearest free responder; pin and directions open in **Google Maps** | Right hospital first time; the driver navigates straight there |
-| Report Samjhao (Mystery Card) | **AI summary** of a long lab report in 3 styles and 2 languages, with every point linked to its report lines and every number checked against the report | Patients understand their report; a changed number is caught before it reaches them |
+| Report Samjhao (Mystery Card, `/report`) | **AI summary** of a long lab report in 3 styles and 2 languages, with every point linked to its report lines and every number checked against the report | Patients understand their report; a changed number is caught before it reaches them |
 | Automation | **n8n**: urgent-case alerts, ambulance trips, booking confirmations and feedback forms through **Gmail** | Duty doctor alerted in minutes; patient gets a confirmation and, after the visit, a feedback form |
 
 ## 4. Working MVP — what you can try live
@@ -120,7 +120,7 @@ Next.js web app (installable) ──► FastAPI backend ──► Gemini 2.5 Fla
 ```
 
 **Stack (all free tiers, no card):** Next.js, FastAPI, Gemini 2.5 Flash, Neon Postgres, Vercel, n8n, GitHub Actions, web push.
-**81 automated backend tests** (triage, safety rules, logins, hospitals kept apart, dispatch, reminders, emails, reports, password reset, data deletion, elder PIN sign-in, the 1-minute no-response alert, guardian alerts). The elder-button database upgrade was tested on Postgres against a copy of the live schema before going live.
+**85 automated backend tests** (triage, safety rules, logins, hospitals kept apart, dispatch, reminders, emails, reports, password reset, data deletion, elder PIN sign-in, the 1-minute no-response alert, guardian alerts, Report Samjhao summary and meaning guard). The elder-button database upgrade was tested on Postgres against a copy of the live schema before going live.
 
 ## 7. Mystery Card feature
 
@@ -140,8 +140,15 @@ doctor approves it on the Clinic Desk, and after the visit a **feedback form** i
 (workflow *"Sehat Saathi - Feedback by Email"*). Answers are saved in an n8n data table and shown on the Clinic Desk
 (average rating, % who found the summary clear, % who would recommend).
 
-**Files:** `docs/mystery-card/report-samjhao.html` (the Mystery Card page), `n8n/README.md` (feedback workflow).
-The live AI summary runs when the page is opened in Claude; opened anywhere else it shows the built-in example report.
+**Where it lives:** inside the Sehat Saathi website at **`/report`** (linked from the opening screen and the
+patient's home page). The page calls the backend's **`POST /api/summarize`** (Gemini 2.5 Flash), which returns all
+three styles in English and Urdu with source lines for every point; **`POST /api/summarize/read-photo`** turns a
+photo of a report into text. The meaning guard runs on the report *as it is now*, so editing a number after
+summarising turns the guard red. If the AI is off, a rules-only summary copies the flagged lines word for word, so
+the button never fails. Tested in `backend/tests/test_summary.py`.
+
+**Files:** `backend/app/summary.py`, `frontend/components/ReportSamjhao.tsx`, `frontend/app/report/page.tsx`;
+the earlier standalone page `docs/mystery-card/report-samjhao.html` and `n8n/README.md` (feedback workflow).
 
 ## 8. Impact
 
@@ -159,4 +166,4 @@ The live AI summary runs when the page is opened in Claude; opened anywhere else
 - WhatsApp needs a verified business number; the app, website and Telegram bot work today.
 - Triage has automated tests but no clinical validation yet; next is a clinic pilot with doctor feedback.
 - The elder app's "while you wait" lines are Dr. Sheryar's reviewed heart steps reworded for the patient; he will re-check the wording.
-- **We keep improving Sehat Saathi step by step** with feedback from doctors and patients. Next: sign language for deaf patients, WhatsApp once the business number is verified, Report Samjhao inside the main app, more languages and more hospitals.
+- **We keep improving Sehat Saathi step by step** with feedback from doctors and patients. Next: sign language for deaf patients, WhatsApp once the business number is verified, Report Samjhao for discharge slips and prescriptions, more languages and more hospitals.

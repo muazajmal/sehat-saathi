@@ -84,6 +84,7 @@ export default function PatientHome() {
 
       <nav className="tiles" aria-label="Sehat Saathi">
         <Link href="/patient/medicines"><span aria-hidden>💊</span>{lang === "ur" ? "میری دوائیں" : "My medicines"}</Link>
+        <Link href="/report"><span aria-hidden>📄</span>{lang === "ur" ? "رپورٹ سمجھاؤ" : "Understand my report"}</Link>
         <Link href="/patient/family"><span aria-hidden>👵</span>{lang === "ur" ? "گھر والوں کی خیریت" : "Family check-ins"}</Link>
         <Link href="/donate"><span aria-hidden>🩸</span>{lang === "ur" ? "خون کا عطیہ" : "Donate blood"}</Link>
         <Link href="/alerts"><span aria-hidden>📢</span>{lang === "ur" ? "علاقے کے الرٹس" : "Area alerts"}</Link>
