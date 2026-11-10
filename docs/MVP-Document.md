@@ -3,7 +3,7 @@
 
 | | |
 | --- | --- |
-| **Team** | Muaz Ajmal (+ teammates: add names) · FAST-NUCES Multan |
+| **Team** | Muaz Ajmal (solo) · FAST-NUCES Multan |
 | **Focus area** | 03 Local Services & Coordination (Clinics), with 04 Mutual Support (responders, blood donors, family check-ins) |
 | **Live MVP** | https://sehat-saathi-eta.vercel.app/app · staff login: https://sehat-saathi-eta.vercel.app/login · elder app: https://sehat-saathi-eta.vercel.app/elder |
 | **Type** | Web app: opens in any browser on a phone or laptop, installs on the home screen like an app. One platform for many hospitals. |
