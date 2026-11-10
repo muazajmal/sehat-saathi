@@ -96,7 +96,6 @@ export default function PatientPortal() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
-  const [website, setWebsite] = useState(""); // honeypot: people never fill this in
   const [email, setEmail] = useState("");
   const [tenants, setTenants] = useState<{ id: number; slug: string; name: string; city: string }[]>([]);
   const [hospital, setHospital] = useState("");
@@ -137,7 +136,6 @@ export default function PatientPortal() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (website) return;
     const p = normalisePhone(phone);
     if (!p) {
       setError(t.phoneInvalid);
@@ -221,15 +219,6 @@ export default function PatientPortal() {
             ? "ڈاکٹر وقت کنفرم کرے تو آپ کو ای میل آئے گی۔"
             : "We'll email you when a doctor confirms your appointment."}
         </p>
-        <input
-          className="hp"
-          tabIndex={-1}
-          autoComplete="off"
-          value={website}
-          onChange={(e) => setWebsite(e.target.value)}
-          aria-hidden="true"
-          name="website"
-        />
         <label className="p-consent">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} required />
           <span>{t.consent(clinic || "Sehat Saathi")}</span>
