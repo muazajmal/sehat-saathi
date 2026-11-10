@@ -31,3 +31,19 @@ For text-only messages, keep the WhatsApp webhook pointed at `https://YOUR-BACKE
    `https://YOUR-FRONTEND/desk?case={{id}}`.
 
 The doctor still logs the call-back on the desk, so the audit trail shows a human closed the loop.
+
+## Workflow — Feedback by Email (Mystery Card)
+
+*"Sehat Saathi - Feedback by Email"* on the n8n cloud instance (active):
+
+1. **Webhook** `POST /webhook/sehat-saathi-feedback-mail-5c2e91` with `{email, name, booking_ref, doctor, slot}`,
+   sent when the doctor marks the visit done on the Report Samjhao Clinic Desk.
+2. **Code** builds the email from a fixed template (so the webhook can only send this invite) with a
+   *Give feedback* button linking to the form, pre-filled with the booking reference and name.
+3. **Gmail** sends it ("How was your visit? Sehat Saathi feedback (SS-…)").
+4. **Form trigger** `/form/sehat-saathi-feedback`: rating 1–5, "Was the AI report summary easy to understand?",
+   "Would you recommend Sehat Saathi to family?", comments (Urdu or English).
+5. **Data table** *Sehat Saathi - Patient Feedback* saves each answer; the Clinic Desk reads it live
+   (average rating, % summary clear, % would recommend).
+
+Booking confirmations from the main app use a separate Gmail workflow (`N8N_EMAIL_WEBHOOK`, see `backend/app/emails.py`).

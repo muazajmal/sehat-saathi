@@ -1,0 +1,535 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sehat Saathi Report Samjhao</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap">
+<style>
+/* Layout: one working column of numbered steps (report → summary → booking → feedback), Clinic Desk as a second tab */
+:root{
+  --bg:#f3f7f6; --surface:#ffffff; --sunk:#e8f0ee; --line:#d3e0dc;
+  --fg:#10302a; --muted:#56706a; --accent:#0f766e; --accent-ink:#ffffff; --accent-soft:#d6efe9;
+  --ok:#15803d; --ok-soft:#dcf3e3; --warn:#b45309; --warn-soft:#fdf0d9; --bad:#b91c1c; --bad-soft:#fde2e2;
+  --hl:#fff1b8;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,sans-serif;
+  --f-ur:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq",serif;
+  --r:12px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1715; --surface:#13221f; --sunk:#0f1d1a; --line:#24413b;
+  --fg:#e3f1ed; --muted:#93b0a9; --accent:#2dd4bf; --accent-ink:#06201c; --accent-soft:#123a34;
+  --ok:#4ade80; --ok-soft:#123522; --warn:#fbbf24; --warn-soft:#3a2c0f; --bad:#f87171; --bad-soft:#3d1717; --hl:#4a4110; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1715; --surface:#13221f; --sunk:#0f1d1a; --line:#24413b;
+  --fg:#e3f1ed; --muted:#93b0a9; --accent:#2dd4bf; --accent-ink:#06201c; --accent-soft:#123a34;
+  --ok:#4ade80; --ok-soft:#123522; --warn:#fbbf24; --warn-soft:#3a2c0f; --bad:#f87171; --bad-soft:#3d1717; --hl:#4a4110; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.wrap{max-width:1080px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-block:18px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:700}
+.brand h1{font-size:20px}
+.brand small{display:block;color:var(--muted);font-size:12px;letter-spacing:.02em}
+.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:999px;border:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:7px 14px;border-radius:999px;cursor:pointer;font-weight:500;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0/.08)}
+.rule{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:999px;padding:6px 14px;text-align:center;margin-bottom:18px}
+.rule b{color:var(--fg)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.steps span{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.steps span.on{background:var(--accent-soft);color:var(--fg);border-color:var(--accent)}
+.steps span.done{color:var(--ok)}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.card h2{font-size:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.num{width:24px;height:24px;border-radius:50%;background:var(--fg);color:var(--bg);display:inline-grid;place-items:center;font-size:12px;font-family:var(--f-body)}
+.sub{color:var(--muted);font-size:13.5px;margin:4px 0 14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+@media (max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
+textarea{width:100%;min-height:230px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:var(--sunk);padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.big{padding:13px 22px;font-size:16px;display:inline-flex;align-items:center;gap:10px}
+.btn:disabled{opacity:.55;cursor:default}
+.btn .ico{width:18px;height:18px}
+.file{position:relative;overflow:hidden}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sunk)}
+.seg button{border:0;background:none;padding:8px 13px;cursor:pointer;color:var(--muted);font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid transparent}
+.chip.routine{background:var(--ok-soft);color:var(--ok)} .chip.soon{background:var(--warn-soft);color:var(--warn)} .chip.urgent{background:var(--bad-soft);color:var(--bad)}
+.chip.neutral{background:var(--sunk);color:var(--muted);border-color:var(--line)}
+.note{font-size:13px;color:var(--muted)}
+.notice{font-size:13.5px;padding:10px 12px;border-radius:10px;background:var(--warn-soft);color:var(--fg);border:1px solid var(--line)}
+.notice.ok{background:var(--ok-soft)} .notice.bad{background:var(--bad-soft)}
+.out{display:grid;gap:10px;margin-top:12px}
+.pt{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:11px 12px;cursor:pointer}
+.pt:hover,.pt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.pt .mark{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700}
+.pt .mark.ok{background:var(--ok-soft);color:var(--ok)} .pt .mark.warn{background:var(--warn-soft);color:var(--warn)} .pt .mark.bad{background:var(--bad-soft);color:var(--bad)}
+.pt h4{margin:0 0 2px;font-family:var(--f-display);font-size:14.5px}
+.pt p{margin:0}
+.pt .src{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.pt .src span{font-size:11px;font-family:ui-monospace,Menlo,monospace;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--muted)}
+.pt .flag{font-size:12px;color:var(--bad);margin-top:4px}
+.one .pt p{font-size:17px;font-weight:500}
+[lang="ur"]{font-family:var(--f-ur);line-height:2.3;direction:rtl;text-align:right}
+.pt[lang="ur"]{grid-template-columns:minmax(0,1fr) 22px}
+.pt[lang="ur"] .mark{order:2} .pt[lang="ur"] .src{direction:ltr;justify-content:flex-end}
+.guard{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;border:1px solid var(--line);margin-top:12px}
+.guard.ok{background:var(--ok-soft)} .guard.warn{background:var(--warn-soft)} .guard.bad{background:var(--bad-soft)}
+.guard b{font-family:var(--f-display)}
+.guard ul{margin:4px 0 0;padding-left:18px;font-size:13px}
+.srcbox{border:1px solid var(--line);border-radius:10px;background:var(--sunk);max-height:520px;overflow:auto}
+.srcbox ol{list-style:none;margin:0;padding:6px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.srcbox li{display:grid;grid-template-columns:34px minmax(0,1fr);padding:3px 10px 3px 0;transition:background .25s}
+.srcbox li .ln{color:var(--muted);text-align:right;padding-right:10px;font-variant-numeric:tabular-nums;user-select:none}
+.srcbox li.hl{background:var(--hl)}
+.srcbox li span:last-child{overflow-wrap:anywhere}
+.label{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 6px}
+.recommend{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.doc{border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;background:var(--surface);text-align:left}
+.doc[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.doc b{font-family:var(--f-display);display:block}
+.doc .s{font-size:13px;color:var(--muted)}
+.doc .tag{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+.days{display:grid;gap:10px;margin-top:14px}
+.day h4{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.slots{display:flex;flex-wrap:wrap;gap:6px}
+.slot{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;cursor:pointer;font-variant-numeric:tabular-nums;font-size:13.5px}
+.slot[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.slot:disabled{text-decoration:line-through;opacity:.45;cursor:not-allowed}
+form.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+@media (max-width:700px){form.fields{grid-template-columns:minmax(0,1fr)}}
+label.f{display:grid;gap:4px;font-size:13px;font-weight:500}
+label.f input{border:1px solid var(--line);border-radius:9px;background:var(--sunk);padding:9px 11px;min-width:0}
+.err{color:var(--bad);font-size:12.5px;min-height:1em}
+.ticket{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--sunk)}
+.ticket .ref{font-family:var(--f-display);font-size:26px;font-weight:700;letter-spacing:.04em}
+.ticket dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:8px 0 0;font-size:14px}
+.ticket dt{color:var(--muted)} .ticket dd{margin:0}
+@media (max-width:560px){.ticket{grid-template-columns:minmax(0,1fr)}}
+.status{font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;display:inline-block}
+.status.held{background:var(--warn-soft);color:var(--warn)} .status.confirmed{background:var(--accent-soft);color:var(--accent)}
+.status.done{background:var(--ok-soft);color:var(--ok)} .status.declined{background:var(--bad-soft);color:var(--bad)}
+.desk{display:grid;gap:10px}
+.bk{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;background:var(--surface)}
+@media (max-width:640px){.bk{grid-template-columns:minmax(0,1fr)}}
+.bk .who{font-family:var(--f-display);font-weight:600;font-size:16px}
+.bk .meta{font-size:13px;color:var(--muted)}
+.bk .ai{font-size:13.5px;margin-top:6px;padding:8px 10px;border-radius:8px;background:var(--sunk)}
+.bk .acts{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;justify-content:flex-end}
+.bk .msg{grid-column:1/-1;font-size:13px}
+.ex{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-left:6px;vertical-align:2px}
+.fb{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.fbc{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface)}
+.stars{color:var(--warn);letter-spacing:2px}
+.kpis{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}
+.kpis div b{display:block;font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums}
+.kpis div span{font-size:12px;color:var(--muted)}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}.srcbox li{transition:none}}
+footer{color:var(--muted);font-size:12.5px;text-align:center;margin-top:24px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="brand"><div class="logo">ص</div><div><h1>Sehat Saathi</h1><small>صحت ساتھی · Report Samjhao</small></div></div>
+  <div class="tabs" role="tablist">
+    <button id="tab-patient" role="tab" aria-selected="true">Patient</button>
+    <button id="tab-desk" role="tab" aria-selected="false">Clinic Desk <span id="desk-count"></span></button>
+  </div>
+</header>
+<p class="rule"><b>Sehat Saathi never diagnoses and never confirms a booking.</b> A doctor does.</p>
+
+<main id="view-patient">
+  <div class="steps" id="steps"><span data-s="1">1 · Report</span><span data-s="2">2 · AI summary</span><span data-s="3">3 · Book doctor</span><span data-s="4">4 · Visit & feedback</span></div>
+
+  <section class="card" id="c-report">
+    <h2><span class="num">1</span>Pick the long report</h2>
+    <p class="sub">Paste a lab report, upload a photo of one, or use the example report already loaded.</p>
+    <textarea id="report" aria-label="Report text" spellcheck="false"></textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary big" id="summarize"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Summarize</span></button>
+      <label class="btn file">Upload report photo<input type="file" id="upload" accept="image/*,.txt"></label>
+      <button class="btn" id="reset-sample">Load example report</button>
+    </div>
+    <p class="note" id="report-msg" style="margin:10px 0 0"></p>
+  </section>
+
+  <section class="card" id="c-summary">
+    <h2><span class="num">2</span>AI summary <span class="chip neutral" id="mode-chip">Example result</span></h2>
+    <p class="sub">Choose a style. Tap any point to see the exact report lines it came from.</p>
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <div class="seg" id="style-seg" aria-label="Summary style">
+          <button data-v="one" aria-pressed="false">One line</button><button data-v="bullets" aria-pressed="true">3 bullets</button><button data-v="detailed" aria-pressed="false">Detailed</button>
+        </div>
+        <div class="seg" id="lang-seg" aria-label="Language">
+          <button data-v="en" aria-pressed="true">English</button><button data-v="ur" aria-pressed="false">اردو</button>
+        </div>
+      </div>
+      <button class="btn" id="listen" hidden>🔊 Listen</button>
+    </div>
+    <div class="grid2" style="margin-top:4px">
+      <div style="min-width:0">
+        <div class="out" id="out"></div>
+        <div class="guard" id="guard"></div>
+      </div>
+      <div style="min-width:0">
+        <p class="label" style="margin-top:12px">Original report · line by line</p>
+        <div class="srcbox" id="srcbox"><ol id="src"></ol></div>
+      </div>
+    </div>
+    <div class="recommend">
+      <div class="row"><span class="chip" id="urg-chip"></span><span class="note" id="urg-why"></span></div>
+      <button class="btn primary" id="go-book">Book a doctor</button>
+    </div>
+  </section>
+
+  <section class="card" id="c-book">
+    <h2><span class="num">3</span>Book an appointment</h2>
+    <p class="sub" id="book-sub">Pick a doctor and a free slot. The OPD fee is paid after the visit.</p>
+    <div class="docs" id="docs"></div>
+    <div class="days" id="days"></div>
+    <form class="fields" id="book-form" novalidate>
+      <label class="f">Patient name<input id="f-name" autocomplete="name" placeholder="e.g. Rashida Bibi"><span class="err" id="e-name"></span></label>
+      <label class="f">Phone (optional)<input id="f-phone" inputmode="tel" placeholder="03xx-xxxxxxx"><span class="err" id="e-phone"></span></label>
+      <label class="f">Gmail for confirmation & feedback<input id="f-email" type="email" inputmode="email" autocomplete="email" placeholder="name@gmail.com"><span class="err" id="e-email"></span></label>
+      <div class="row" style="grid-column:1/-1"><button class="btn primary big" id="book-btn" type="submit">Request appointment</button><span class="err" id="e-slot"></span></div>
+    </form>
+  </section>
+
+  <section class="card" id="c-done" hidden>
+    <h2><span class="num">4</span>Visit & feedback</h2>
+    <p class="sub">The slot is held. The doctor approves it from the Clinic Desk. After the visit, the feedback form goes to the patient's Gmail.</p>
+    <div id="ticket"></div>
+  </section>
+</main>
+
+<main id="view-desk" hidden>
+  <section class="card">
+    <h2>Clinic Desk</h2>
+    <p class="sub">Doctors see the AI summary before the visit, approve the booking, and mark the visit done. Marking it done emails the feedback form through n8n and Gmail.</p>
+    <div class="desk" id="desk"></div>
+  </section>
+  <section class="card">
+    <div class="row" style="justify-content:space-between"><h2>Patient feedback</h2><button class="btn" id="fb-refresh">Refresh from n8n</button></div>
+    <p class="sub">Answers patients sent from the emailed form, read live from the n8n data table.</p>
+    <div id="fb"></div>
+  </section>
+</main>
+<footer>Sehat Saathi · Report Samjhao. Summaries explain the report; they are not a diagnosis.</footer>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cap=n=>(window.claude&&window.claude.use?window.claude.use(n).catch(()=>null):Promise.resolve(null));
+const N8N={wf:'Hs6grozft8SVpJKM',trig:'Send Feedback Email Webhook',table:'6IrVYv1NS2YZb60E',project:'NYt6sxSL0HOQt1Vf'};
+const SPECS=['General Medicine','Endocrinology','Cardiology','Nephrology','Gynaecology','Paediatrics'];
+const DOCTORS=[
+ {id:'d1',name:'Dr. Ayesha Khan',spec:'General Medicine',title:'General Physician',fee:1200},
+ {id:'d2',name:'Dr. Bilal Ahmed',spec:'Endocrinology',title:'Endocrinologist · diabetes & thyroid',fee:2000},
+ {id:'d3',name:'Dr. Sana Malik',spec:'Cardiology',title:'Cardiologist · heart & cholesterol',fee:2500},
+ {id:'d4',name:'Dr. Hamza Qureshi',spec:'Nephrology',title:'Nephrologist · kidneys',fee:2200},
+ {id:'d5',name:'Dr. Farah Javed',spec:'Gynaecology',title:'Gynaecologist',fee:1800},
+ {id:'d6',name:'Dr. Imran Shah',spec:'Paediatrics',title:'Paediatrician · children',fee:1500}];
+const SAMPLE=`CITY DIAGNOSTIC LAB, Multan
+Patient: Rashida Bibi   Age/Sex: 54 / F   Ref: OPD
+Date: 08-Nov-2026   Sample: Fasting blood
+HbA1c: 9.2 %   (Normal < 5.7, Diabetes >= 6.5)   HIGH
+Fasting Blood Sugar: 186 mg/dL   (70 - 99)   HIGH
+Hemoglobin: 10.4 g/dL   (12.0 - 15.5)   LOW
+Total Cholesterol: 238 mg/dL   (< 200)   HIGH
+LDL Cholesterol: 156 mg/dL   (< 100)   HIGH
+HDL Cholesterol: 41 mg/dL   (> 50)   LOW
+Triglycerides: 205 mg/dL   (< 150)   HIGH
+Serum Creatinine: 1.1 mg/dL   (0.6 - 1.2)
+Urine Albumin: Trace
+TSH: 2.4 mIU/L   (0.4 - 4.0)
+Remarks: Findings suggest poorly controlled blood sugar. Correlate clinically. Repeat HbA1c after 3 months.`;
+const EXAMPLE={
+ one_line:{en:'Blood sugar is high (HbA1c 9.2%) and cholesterol is high, so see a diabetes doctor soon.',ur:'شوگر زیادہ ہے (HbA1c 9.2%) اور کولیسٹرول بھی زیادہ ہے، اس لیے جلد شوگر کے ڈاکٹر کو دکھائیں۔',src:[4,5,7,8]},
+ bullets:[
+  {en:'Blood sugar is above the diabetes range: HbA1c 9.2% and fasting sugar 186 mg/dL.',ur:'شوگر ذیابیطس کی حد سے اوپر ہے: HbA1c 9.2% اور نہار منہ شوگر 186 mg/dL۔',src:[4,5]},
+  {en:'Cholesterol is high: total 238, LDL 156 and triglycerides 205 mg/dL, while good HDL is low at 41.',ur:'کولیسٹرول زیادہ ہے: ٹوٹل 238، LDL 156 اور ٹرائی گلیسرائیڈز 205 mg/dL، جبکہ اچھا HDL کم یعنی 41 ہے۔',src:[7,8,9,10]},
+  {en:'Hemoglobin is low at 10.4 g/dL. Kidney (creatinine 1.1) and thyroid (TSH 2.4) results are normal.',ur:'ہیموگلوبن 10.4 g/dL کے ساتھ کم ہے۔ گردے (creatinine 1.1) اور تھائیرائیڈ (TSH 2.4) نارمل ہیں۔',src:[6,11,13]}],
+ detailed:[
+  {h_en:'Blood sugar',h_ur:'شوگر',en:'HbA1c is 9.2%; the diabetes range starts at 6.5%. Fasting sugar is 186 mg/dL against a normal 70 to 99. The lab says sugar is poorly controlled and asks to repeat HbA1c after 3 months.',ur:'HbA1c 9.2% ہے، ذیابیطس کی حد 6.5% سے شروع ہوتی ہے۔ نہار منہ شوگر 186 mg/dL ہے جبکہ نارمل 70 سے 99 ہے۔ لیب کے مطابق شوگر کنٹرول میں نہیں اور 3 ماہ بعد HbA1c دوبارہ کروانا ہے۔',src:[4,5,14]},
+  {h_en:'Cholesterol and fats',h_ur:'کولیسٹرول اور چکنائی',en:'Total cholesterol 238 mg/dL (target under 200), LDL 156 (under 100), triglycerides 205 (under 150). HDL, the good cholesterol, is 41 and should be above 50.',ur:'ٹوٹل کولیسٹرول 238 mg/dL (200 سے کم ہونا چاہیے)، LDL 156 (100 سے کم)، ٹرائی گلیسرائیڈز 205 (150 سے کم)۔ اچھا کولیسٹرول HDL 41 ہے، یہ 50 سے زیادہ ہونا چاہیے۔',src:[7,8,9,10]},
+  {h_en:'Blood count',h_ur:'خون کی مقدار',en:'Hemoglobin is 10.4 g/dL, below the normal 12.0 to 15.5. Ask the doctor about it at the visit.',ur:'ہیموگلوبن 10.4 g/dL ہے جو نارمل 12.0 سے 15.5 سے کم ہے۔ ملاقات پر ڈاکٹر سے اس بارے میں پوچھیں۔',src:[6]},
+  {h_en:'Normal results',h_ur:'نارمل نتائج',en:'Creatinine 1.1 mg/dL (kidneys) and TSH 2.4 (thyroid) are within range. Urine albumin shows a trace.',ur:'Creatinine 1.1 mg/dL (گردے) اور TSH 2.4 (تھائیرائیڈ) نارمل حد میں ہیں۔ پیشاب میں البیومن کی معمولی مقدار ہے۔',src:[11,12,13]}],
+ urgency:'soon',urgency_reason_en:'Sugar and cholesterol are well above range. Book within a week.',urgency_reason_ur:'شوگر اور کولیسٹرول حد سے کافی زیادہ ہیں۔ ایک ہفتے میں وقت لیں۔',specialty:'Endocrinology'};
+
+const S={lines:[],sum:null,live:false,style:'bullets',lang:'en',sel:-1,doc:null,slot:null,bookings:[],cur:null};
+const store={get(){try{return JSON.parse(localStorage.getItem('ss-bookings')||'null')}catch(e){return null}},set(v){try{localStorage.setItem('ss-bookings',JSON.stringify(v))}catch(e){}}};
+
+/* ---------- report + source ---------- */
+function setReport(t){$('#report').value=t;S.lines=splitLines(t);renderSource()}
+function splitLines(t){return String(t).split(/\r?\n/).map(l=>l.trim()).filter(Boolean).slice(0,150)}
+function renderSource(hl=[]){
+  $('#src').innerHTML=S.lines.map((l,i)=>`<li data-id="${i+1}" class="${hl.includes(i+1)?'hl':''}"><span class="ln">${i+1}</span><span>${esc(l)}</span></li>`).join('');
+}
+function highlight(ids){
+  renderSource(ids);
+  const first=$('#src li.hl'); if(first){const box=$('#srcbox');box.scrollTo({top:first.offsetTop-40,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+}
+
+/* ---------- meaning guard ---------- */
+const UR_DIG='۰۱۲۳۴۵۶۷۸۹',AR_DIG='٠١٢٣٤٥٦٧٨٩';
+function nums(t){t=String(t).replace(/[۰-۹]/g,d=>UR_DIG.indexOf(d)).replace(/[٠-٩]/g,d=>AR_DIG.indexOf(d));return (t.match(/\d+(?:\.\d+)?/g)||[]).map(Number)}
+function check(pt){
+  const src=(pt.src||[]).filter(n=>Number.isInteger(n)&&n>=1&&n<=S.lines.length);
+  const cited=new Set(src.flatMap(n=>nums(S.lines[n-1])));
+  const all=new Set(S.lines.flatMap(nums));
+  const text=(pt.en||'')+' '+(pt.ur||'')+' '+(pt.h_en||'');
+  const ns=[...new Set(nums(text))];
+  const missing=ns.filter(n=>!all.has(n)), elsewhere=ns.filter(n=>all.has(n)&&!cited.has(n));
+  let level='ok'; if(!src.length) level='warn'; if(elsewhere.length) level='warn'; if(missing.length) level='bad';
+  return {level,src,count:ns.length,missing,elsewhere};
+}
+function points(){
+  const s=S.sum; if(!s) return [];
+  if(S.style==='one') return [s.one_line];
+  if(S.style==='bullets') return s.bullets.slice(0,3);
+  return s.detailed;
+}
+function renderSummary(){
+  const s=S.sum, L=S.lang, out=$('#out');
+  out.className='out'+(S.style==='one'?' one':'');
+  const pts=points();
+  out.innerHTML=pts.map((p,i)=>{const c=check(p);const mk=c.level==='ok'?'✓':c.level==='warn'?'!':'✕';
+    const h=S.style==='detailed'?`<h4>${esc(L==='ur'?p.h_ur:p.h_en)}</h4>`:'';
+    const flag=c.missing.length?`<div class="flag">${L==='ur'?'یہ نمبر رپورٹ میں نہیں':'Not in report'}: ${c.missing.join(', ')}</div>`:'';
+    return `<button class="pt${S.sel===i?' sel':''}" data-i="${i}" lang="${L}"><span class="mark ${c.level}" aria-label="${c.level}">${mk}</span><div><div>${h}<p>${esc(L==='ur'?p.ur:p.en)}</p></div><div class="src">${c.src.map(n=>`<span>L${n}</span>`).join('')}</div>${flag}</div></button>`}).join('');
+  out.querySelectorAll('.pt').forEach(b=>b.onclick=()=>{S.sel=+b.dataset.i;renderSummary();highlight(check(pts[S.sel]).src)});
+  // whole-summary guard across all three styles and both languages
+  const every=[s.one_line,...s.bullets,...s.detailed].map(check);
+  const total=every.reduce((a,c)=>a+c.count,0), bad=every.flatMap(c=>c.missing), warn=every.filter(c=>c.level==='warn').length;
+  const g=$('#guard'); const lvl=bad.length?'bad':warn?'warn':'ok';
+  g.className='guard '+lvl;
+  g.innerHTML=`<div style="font-size:22px">${lvl==='ok'?'🛡️':'⚠️'}</div><div><b>${lvl==='ok'?'Meaning kept':lvl==='warn'?'Check before sharing':'Meaning changed'}</b>
+  <ul><li>${total} numbers checked against the report: ${bad.length?`<b>${bad.length} not found</b> (${[...new Set(bad)].join(', ')})`:'all found'}.</li>
+  <li>${every.length-every.filter(c=>!c.src.length).length} of ${every.length} points are linked to report lines${warn?`; ${warn} need a second look`:''}.</li>
+  <li>Units and ranges are kept as written. No new medical claims are added.</li></ul></div>`;
+  const u=s.urgency in {routine:1,soon:1,urgent:1}?s.urgency:'routine';
+  const uc=$('#urg-chip'); uc.className='chip '+u; uc.textContent={routine:'Routine',soon:'See a doctor soon',urgent:'Urgent: today'}[u];
+  $('#urg-why').textContent=(L==='ur'?s.urgency_reason_ur:s.urgency_reason_en)||'';
+  $('#urg-why').lang=L==='ur'?'ur':'en';
+  $('#go-book').textContent=`Book ${specLabel(s.specialty)}`;
+  $('#mode-chip').textContent=S.live?'Live AI':'Example result';
+  $('#mode-chip').className='chip '+(S.live?'routine':'neutral');
+  steps(S.cur?4:2);
+}
+function specLabel(sp){const d=DOCTORS.find(d=>d.spec===sp);return d?d.title.split(' ·')[0].toLowerCase().replace(/^\w/,c=>c.toUpperCase()):'a doctor'}
+
+/* ---------- AI ---------- */
+const PROMPT=`You summarise medical lab reports for patients in Pakistan.
+Rules: never diagnose and never add facts, causes or advice that are not in the report. Copy every number and unit exactly as written. In Urdu text use Urdu script but keep numbers in Western digits (0-9) and keep test names like HbA1c in English letters.
+The report is given as numbered lines. For every point list the line numbers it uses in "src".
+Return ONLY a JSON object, no prose, with this shape:
+{"not_a_report":false,
+ "one_line":{"en":"...","ur":"...","src":[n]},
+ "bullets":[{"en":"...","ur":"...","src":[n]}] (exactly 3, most important first),
+ "detailed":[{"h_en":"short heading","h_ur":"...","en":"2-3 sentences","ur":"...","src":[n]}] (3 to 5 sections, cover every result),
+ "urgency":"routine"|"soon"|"urgent" (urgent only for critical values),
+ "urgency_reason_en":"one short sentence","urgency_reason_ur":"...",
+ "specialty":one of ${JSON.stringify(SPECS)}}
+If the text is not a medical report, return {"not_a_report":true}.
+
+REPORT:
+`;
+function parseJSON(t){t=String(t).replace(/```json|```/g,'');const a=t.indexOf('{'),b=t.lastIndexOf('}');return JSON.parse(t.slice(a,b+1))}
+function valid(j){return j&&j.one_line&&Array.isArray(j.bullets)&&j.bullets.length>=3&&Array.isArray(j.detailed)&&j.detailed.length}
+function msg(el,t,kind){const e=$(el);e.innerHTML=t?`<span class="notice ${kind||''}" style="display:inline-block">${t}</span>`:''}
+async function summarize(){
+  const text=$('#report').value.trim();
+  if(text.length<40){msg('#report-msg','Paste a longer report first. A few lines of results are enough.');return}
+  S.lines=splitLines(text);renderSource();
+  const btn=$('#summarize');btn.disabled=true;btn.querySelector('span').innerHTML='<span class="spin"></span> Summarizing…';msg('#report-msg','');
+  try{
+    const sample=await cap('sample');
+    if(!sample){
+      if(text===SAMPLE.trim()){S.sum=EXAMPLE;S.live=false;msg('#report-msg','Live AI runs when this page is open in Claude. Showing the example summary.')}
+      else{msg('#report-msg','Live AI runs when this page is open in Claude. Open it there to summarize your own report.');return}
+    }else{
+      const numbered=S.lines.map((l,i)=>`[${i+1}] ${l}`).join('\n');
+      const r=await sample(PROMPT+numbered,{modelTier:'default',cache:false});
+      const j=parseJSON(r.text);
+      if(j.not_a_report){msg('#report-msg','This does not look like a medical report. Paste lab results or a doctor\'s note.','bad');return}
+      if(!valid(j)) throw new Error('shape');
+      if(!SPECS.includes(j.specialty)) j.specialty='General Medicine';
+      S.sum=j;S.live=true;msg('#report-msg','Summary ready. Every point is checked against the report below.','ok');
+    }
+    S.sel=-1;renderSummary();prepBooking(true);
+    $('#c-summary').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    const c=e&&e.code;
+    msg('#report-msg',c==='not_granted'?'AI is turned off for this page. Allow it from the page permissions to summarize.':c==='rate_limited'?'Too many requests right now. Wait a minute and press Summarize again.':'The summary did not come back in the right shape. Press Summarize again.','bad');
+  }finally{btn.disabled=false;btn.querySelector('span').textContent='Summarize'}
+}
+async function readPhoto(file){
+  if(file.type==='text/plain'||/\.txt$/i.test(file.name)){setReport(await file.text());msg('#report-msg','Report text loaded. Press Summarize.');return}
+  const sample=await cap('sample');
+  const lim=sample&&sample.limits?await sample.limits().catch(()=>null):null;
+  if(!sample||!lim||!lim.images){msg('#report-msg','Reading photos works when this page is open in Claude. You can paste the report text instead.');return}
+  msg('#report-msg','<span class="spin"></span> Reading the photo…');
+  try{
+    const r=await sample('Transcribe this medical report image exactly. One test result per line. Keep every number, unit and normal range exactly as printed. Output only the transcribed text. If it is not a medical report, output NOT_A_REPORT.',{images:[file],modelTier:'default',cache:false});
+    if(/NOT_A_REPORT/.test(r.text)){msg('#report-msg','That photo does not look like a medical report.','bad');return}
+    setReport(r.text.trim());msg('#report-msg','Photo read into text. Check it, then press Summarize.','ok');
+  }catch(e){msg('#report-msg','Could not read that photo. Try a clearer, straight photo or paste the text.','bad')}
+}
+
+/* ---------- listen ---------- */
+let TTS=null;
+cap('tts').then(t=>{TTS=t;if(t)$('#listen').hidden=false});
+$('#listen').onclick=async()=>{
+  if(!TTS||!S.sum)return;
+  const L=S.lang,txt=points().map(p=>(S.style==='detailed'?(L==='ur'?p.h_ur:p.h_en)+'. ':'')+(L==='ur'?p.ur:p.en)).join(' ');
+  try{await TTS.speak(txt.slice(0,1990),{language:L==='ur'?'ur':'en'})}catch(e){if(e&&e.code==='not_granted')$('#listen').hidden=true}
+};
+
+/* ---------- booking ---------- */
+function days(){const out=[],d=new Date();for(let k=1;out.length<3;k++){const x=new Date(d);x.setDate(d.getDate()+k);if(x.getDay()!==0)out.push(x)}return out}
+const TIMES=['10:00','10:30','11:00','11:30','12:00','16:00','16:30','17:00'];
+function slotKey(doc,day,t){return `${doc}|${day.toDateString()}|${t}`}
+function preTaken(k){let h=0;for(const c of k)h=(h*31+c.charCodeAt(0))>>>0;return h%3===0}
+function fmtDay(d){return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}
+function fmt12(t){const [h,m]=t.split(':').map(Number);return `${(h+11)%12+1}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`}
+function prepBooking(fromSummary){
+  const sp=S.sum&&S.sum.specialty;
+  if(fromSummary||!S.doc){const d=DOCTORS.find(d=>d.spec===sp)||DOCTORS[0];S.doc=d.id;S.slot=null}
+  $('#book-sub').textContent=sp?`AI suggests ${specLabel(sp).toLowerCase()} based on the report. You can pick anyone. The OPD fee is paid after the visit.`:'Pick a doctor and a free slot. The OPD fee is paid after the visit.';
+  renderDocs();renderSlots();
+}
+function renderDocs(){
+  const sp=S.sum&&S.sum.specialty;
+  $('#docs').innerHTML=DOCTORS.map(d=>`<button type="button" class="doc" data-id="${d.id}" aria-pressed="${S.doc===d.id}">${d.spec===sp?'<span class="tag">Suggested by AI</span>':''}<b>${esc(d.name)}</b><span class="s">${esc(d.title)}</span><br><span class="s">OPD fee Rs ${d.fee.toLocaleString('en-PK')} · pay after visit</span></button>`).join('');
+  $('#docs').querySelectorAll('.doc').forEach(b=>b.onclick=()=>{S.doc=b.dataset.id;S.slot=null;renderDocs();renderSlots()});
+}
+function renderSlots(){
+  const booked=new Set(S.bookings.filter(b=>b.status!=='declined').map(b=>b.key));
+  $('#days').innerHTML=days().map(day=>`<div class="day"><h4>${fmtDay(day)}</h4><div class="slots">${TIMES.map(t=>{const k=slotKey(S.doc,day,t);const off=preTaken(k)||booked.has(k);return `<button type="button" class="slot" data-k="${esc(k)}" data-label="${esc(fmtDay(day)+', '+fmt12(t))}" aria-pressed="${S.slot&&S.slot.key===k}" ${off?'disabled title="Taken"':''}>${fmt12(t)}</button>`}).join('')}</div></div>`).join('');
+  $('#days').querySelectorAll('.slot:not(:disabled)').forEach(b=>b.onclick=()=>{S.slot={key:b.dataset.k,label:b.dataset.label};$('#e-slot').textContent='';renderSlots();steps(3)});
+}
+const EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+$('#book-form').onsubmit=e=>{
+  e.preventDefault();
+  const name=$('#f-name').value.trim(),phone=$('#f-phone').value.trim(),email=$('#f-email').value.trim().toLowerCase();
+  let ok=true;
+  $('#e-name').textContent=name.length<2?(ok=false,'Enter the patient\'s name.'):'';
+  $('#e-phone').textContent=phone&&!/^0?3\d{2}[- ]?\d{7}$/.test(phone.replace(/\s/g,''))?(ok=false,'Use a Pakistani mobile number like 0300-1234567.'):'';
+  $('#e-email').textContent=!EMAIL.test(email)?(ok=false,'Enter a valid Gmail address so we can send the feedback form.'):'';
+  if(!S.slot){$('#e-slot').textContent='Pick a free time slot above.';ok=false}
+  if(!ok)return;
+  const d=DOCTORS.find(x=>x.id===S.doc);
+  const ref='SS-'+Math.random().toString(36).slice(2,6).toUpperCase();
+  const b={ref,name,phone,email,doctor:d.name,docTitle:d.title,fee:d.fee,slot:S.slot.label,key:S.slot.key,status:'held',
+    summary:S.sum?{one:S.sum.one_line.en,urgency:S.sum.urgency}:null,mail:null,created:Date.now()};
+  S.bookings.unshift(b);S.cur=ref;save();S.slot=null;renderSlots();renderTicket();renderDesk();
+  $('#c-done').hidden=false;$('#c-done').scrollIntoView({behavior:'smooth',block:'start'});steps(4);
+};
+function save(){store.set(S.bookings.filter(b=>!b.example))}
+const STATUS={held:['held','Waiting for doctor approval'],confirmed:['confirmed','Confirmed by doctor'],done:['done','Visit done'],declined:['declined','Declined by doctor']};
+function renderTicket(){
+  const b=S.bookings.find(x=>x.ref===S.cur);if(!b)return;
+  const st=STATUS[b.status];
+  $('#ticket').innerHTML=`<div class="ticket"><div style="min-width:0"><span class="label">Booking reference</span><div class="ref">${esc(b.ref)}</div>
+  <dl><dt>Patient</dt><dd>${esc(b.name)}</dd><dt>Doctor</dt><dd>${esc(b.doctor)}</dd><dt>Time</dt><dd>${esc(b.slot)}</dd><dt>Gmail</dt><dd style="overflow-wrap:anywhere">${esc(b.email)}</dd><dt>Fee</dt><dd>Rs ${b.fee.toLocaleString('en-PK')}, paid after the visit</dd></dl></div>
+  <div><span class="status ${st[0]}">${st[1]}</span></div></div>
+  <div class="row" style="margin-top:12px">${b.status==='held'?`<button class="btn primary" id="open-desk">Open Clinic Desk to approve</button>`:''}${b.status==='confirmed'?`<button class="btn primary" data-done="${esc(b.ref)}">Visit done: email feedback form</button>`:''}</div>
+  <p class="note" id="t-msg" style="margin:10px 0 0">${mailLine(b)}</p>`;
+  const od=$('#open-desk');if(od)od.onclick=()=>tab('desk');
+  const dn=$('#ticket [data-done]');if(dn)dn.onclick=()=>visitDone(b.ref);
+}
+function mailLine(b){
+  if(!b.mail)return '';
+  if(b.mail.state==='sending')return '<span class="spin"></span> Sending the feedback form to '+esc(b.email)+' through n8n…';
+  if(b.mail.state==='sent')return '<span class="notice ok" style="display:inline-block">✓ Feedback form emailed to '+esc(b.email)+' from Gmail'+(b.mail.exec?' (n8n run #'+esc(b.mail.exec)+')':'')+'.</span>';
+  if(b.mail.state==='queued')return '<span class="notice ok" style="display:inline-block">Feedback email started in n8n (run #'+esc(b.mail.exec)+'). It reaches the inbox in a few seconds.</span>';
+  return '<span class="notice bad" style="display:inline-block">'+esc(b.mail.err)+'</span>';
+}
+
+/* ---------- n8n via the n8n connector ---------- */
+async function n8n(tool,input){
+  const mcp=await cap('mcp');if(!mcp)throw{code:'no_mcp'};
+  const r=await mcp.callTool('n8n',tool,input,{cache:false});return r.payload;
+}
+function mcpErr(e){const c=e&&e.code;return ({no_mcp:'Sending email works when this page is open in Claude.',server_not_connected:'Add the n8n connector in claude.ai Settings → Connectors, then press the button again.',needs_reauth:'Reconnect n8n in claude.ai Settings → Connectors, then press the button again.',not_in_manifest:'n8n is not allowed for this page yet. Allow it, then press the button again.',approval_required:'n8n needs your approval for this page. Press the button again and choose Allow.',selection_required:'Choose which n8n connection to use in the prompt, then press the button again.',server_unavailable:'n8n did not answer. Check the Clinic Desk before trying again, the email may already be on its way.'})[c]||'Could not reach n8n. Press the button again.'}
+async function visitDone(ref){
+  const b=S.bookings.find(x=>x.ref===ref);if(!b||b.mail&&(b.mail.state==='sending'||b.mail.state==='sent'||b.mail.state==='queued'))return;
+  b.status='done';b.mail={state:'sending'};save();renderAll();
+  if(b.example){b.mail={state:'err',err:'This is an example booking with no real Gmail. Book a real one to send the form.'};b.status='confirmed';renderAll();return}
+  try{
+    const p=await n8n('execute_workflow',{workflowId:N8N.wf,executionMode:'production',triggerNodeName:N8N.trig,
+      inputs:{webhookData:{method:'POST',body:{email:b.email,name:b.name,booking_ref:b.ref,doctor:b.doctor,slot:b.slot}}}});
+    const exec=p&&(p.executionId||p.id);b.mail={state:'queued',exec};save();renderAll();
+    if(exec){for(let i=0;i<4;i++){await new Promise(r=>setTimeout(r,2500));
+      try{const x=await n8n('get_workflow_execution',{workflowId:N8N.wf,executionId:String(exec)});const st=x&&x.execution&&x.execution.status;
+        if(st==='success'){b.mail={state:'sent',exec};break}
+        if(st==='error'||st==='crashed'){b.mail={state:'err',err:'n8n could not send the email (run #'+exec+'). Check the Gmail account in n8n.'};break}}catch(e){break}}
+      save();renderAll();}
+  }catch(e){b.status='confirmed';b.mail={state:'err',err:mcpErr(e)};save();renderAll()}
+}
+
+/* ---------- desk ---------- */
+function renderDesk(){
+  const live=S.bookings.filter(b=>b.status==='held').length;
+  $('#desk-count').textContent=live?`(${live})`:'';
+  $('#desk').innerHTML=S.bookings.length?S.bookings.map(b=>{const st=STATUS[b.status];const u=b.summary&&b.summary.urgency;
+    return `<div class="bk"><div style="min-width:0"><div class="who">${esc(b.name)}${b.example?'<span class="ex">Example</span>':''}</div>
+    <div class="meta">${esc(b.ref)} · ${esc(b.doctor)} · ${esc(b.slot)}${b.email?' · '+esc(b.email):''}</div>
+    ${b.summary?`<div class="ai"><b>AI summary:</b> ${esc(b.summary.one)} ${u?`<span class="chip ${u}">${{routine:'Routine',soon:'Soon',urgent:'Urgent'}[u]||''}</span>`:''}</div>`:''}</div>
+    <div class="acts"><span class="status ${st[0]}">${st[1]}</span>
+    ${b.status==='held'?`<button class="btn primary" data-a="approve" data-r="${esc(b.ref)}">Approve</button><button class="btn" data-a="decline" data-r="${esc(b.ref)}">Decline</button>`:''}
+    ${b.status==='confirmed'?`<button class="btn primary" data-a="done" data-r="${esc(b.ref)}">Visit done: email feedback</button>`:''}</div>
+    ${b.mail?`<div class="msg">${mailLine(b)}</div>`:''}</div>`}).join(''):'<p class="note">No bookings yet. Patients appear here after they request an appointment.</p>';
+  $('#desk').querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>{const b=S.bookings.find(y=>y.ref===x.dataset.r);if(!b)return;
+    if(x.dataset.a==='approve'){b.status='confirmed';save();renderAll()}
+    else if(x.dataset.a==='decline'){b.status='declined';save();renderAll()}
+    else visitDone(b.ref)});
+}
+async function loadFeedback(){
+  const box=$('#fb');box.innerHTML='<p class="note"><span class="spin"></span> Reading feedback from n8n…</p>';
+  try{
+    const p=await n8n('get_data_table_rows',{dataTableId:N8N.table,projectId:N8N.project,sortBy:'createdAt:desc',limit:20});
+    const rows=(p&&(p.rows||p.data))||[];
+    if(!rows.length){box.innerHTML='<p class="note">No feedback yet. Mark a visit done, open the email, and submit the form. It shows up here.</p>';return}
+    const avg=rows.reduce((a,r)=>a+(+r.rating||0),0)/rows.length;
+    const rec=rows.filter(r=>r.would_recommend==='Yes').length, clear=rows.filter(r=>r.summary_clear==='Yes').length;
+    box.innerHTML=`<div class="kpis"><div><b>${avg.toFixed(1)} / 5</b><span>Average rating</span></div><div><b>${Math.round(clear/rows.length*100)}%</b><span>Found the summary clear</span></div><div><b>${Math.round(rec/rows.length*100)}%</b><span>Would recommend</span></div><div><b>${rows.length}</b><span>Responses</span></div></div>
+    <div class="fb">${rows.map(r=>`<div class="fbc"><div class="stars" aria-label="${+r.rating||0} of 5">${'★'.repeat(+r.rating||0)}${'☆'.repeat(5-(+r.rating||0))}</div><b>${esc(r.patient_name||'Patient')}</b> <span class="note">${esc(r.booking_ref||'')}</span><div class="note">Summary clear: ${esc(r.summary_clear||'-')} · Recommend: ${esc(r.would_recommend||'-')}</div>${r.comments?`<p style="margin:6px 0 0" dir="auto">${esc(r.comments)}</p>`:''}</div>`).join('')}</div>`;
+  }catch(e){box.innerHTML=`<p class="notice bad">${esc(mcpErr(e))}</p>`}
+}
+$('#fb-refresh').onclick=loadFeedback;
+
+/* ---------- shell ---------- */
+function steps(n){document.querySelectorAll('#steps span').forEach(s=>{const k=+s.dataset.s;s.className=k===n?'on':k<n?'done':''})}
+function tab(v){$('#view-patient').hidden=v!=='patient';$('#view-desk').hidden=v!=='desk';$('#tab-patient').setAttribute('aria-selected',v==='patient');$('#tab-desk').setAttribute('aria-selected',v==='desk');scrollTo({top:0})}
+$('#tab-patient').onclick=()=>tab('patient');$('#tab-desk').onclick=()=>tab('desk');
+function renderAll(){renderTicket();renderDesk();renderSlots()}
+document.querySelectorAll('#style-seg button').forEach(b=>b.onclick=()=>{S.style=b.dataset.v;S.sel=-1;document.querySelectorAll('#style-seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderSummary();renderSource()});
+document.querySelectorAll('#lang-seg button').forEach(b=>b.onclick=()=>{S.lang=b.dataset.v;document.querySelectorAll('#lang-seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderSummary()});
+$('#summarize').onclick=summarize;
+$('#upload').onchange=e=>{const f=e.target.files[0];if(f)readPhoto(f);e.target.value=''};
+$('#reset-sample').onclick=()=>{setReport(SAMPLE);S.sum=EXAMPLE;S.live=false;S.sel=-1;renderSummary();prepBooking(true);msg('#report-msg','')};
+$('#report').addEventListener('input',()=>{S.lines=splitLines($('#report').value);renderSource()});
+$('#go-book').onclick=()=>{$('#c-book').scrollIntoView({behavior:'smooth',block:'start'});steps(3)};
+
+const EXAMPLES=[
+ {ref:'SS-7K2P',name:'Muhammad Aslam',email:'',doctor:'Dr. Sana Malik',slot:'Example slot, 10:30 AM',key:'x1',fee:2500,status:'held',example:true,summary:{one:'Chest pain report: ECG shows changes the lab marks for review, see a heart doctor today.',urgency:'urgent'}},
+ {ref:'SS-3MQ9',name:'Nadia Perveen',email:'',doctor:'Dr. Ayesha Khan',slot:'Example slot, 4:00 PM',key:'x2',fee:1200,status:'confirmed',example:true,summary:{one:'Blood count is normal apart from slightly low vitamin D.',urgency:'routine'}}];
+S.bookings=[...(store.get()||[]),...EXAMPLES];
+setReport(SAMPLE);S.sum=EXAMPLE;renderSummary();prepBooking(true);renderDesk();steps(1);
+</script>
+
+</body></html>
