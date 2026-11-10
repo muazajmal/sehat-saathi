@@ -2449,3 +2449,9 @@ a.sslot:hover {
 .owner-leads .who a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .owner-list li.new { border-color: #f5b14c; }
 .owner-list li.closed { opacity: 0.6; }
+
+/* Screen loading state */
+.page-loading { min-height: 60vh; display: grid; place-content: center; justify-items: center; gap: 14px; color: var(--muted, #8aa39e); font-size: 0.95rem; }
+.page-loading-pulse { width: 44px; height: 44px; border-radius: 50%; background: #5fe3c4; box-shadow: 0 0 0 0 rgba(95, 227, 196, 0.6); animation: page-pulse 1.4s ease-out infinite; }
+@keyframes page-pulse { 0% { transform: scale(0.85); box-shadow: 0 0 0 0 rgba(95, 227, 196, 0.55); } 70% { transform: scale(1); box-shadow: 0 0 0 22px rgba(95, 227, 196, 0); } 100% { transform: scale(0.85); box-shadow: 0 0 0 0 rgba(95, 227, 196, 0); } }
+@media (prefers-reduced-motion: reduce) { .page-loading-pulse { animation: none; } }
