@@ -119,6 +119,60 @@ export interface ElderT {
   checked_at: string | null;
   week: { day: string; status: "ok" | "help" }[];
   link: string;
+  sos?: SosT | null;
+  has_pin?: boolean;
+}
+/** One press of the elder's emergency button. */
+export interface SosT {
+  id: number;
+  status: "waiting" | "okay" | "help" | "no_response" | "resolved";
+  started_at: string;
+  respond_by: string;
+  seconds_left: number;
+  responded_at: string | null;
+  escalated_at: string | null;
+  resolved_at: string | null;
+  resolved_by: string;
+  lat: number | null;
+  lng: number | null;
+  map: string;
+  case_id: number | null;
+}
+export interface GuardianT {
+  id: number;
+  name: string;
+  relation: string;
+  phone: string;
+  email: string;
+}
+export interface ElderProfileT {
+  has_pin: boolean;
+  age: number;
+  conditions: string;
+  medicines: string;
+  allergies: string;
+  blood_group: string;
+  guardians: GuardianT[];
+  sos: SosT | null;
+}
+export interface ElderHomeT {
+  name: string;
+  lang: "ur" | "en";
+  status: ElderT["status"];
+  checked_at: string | null;
+  checkin_time: string;
+  card: string;
+  guardians: { name: string; relation: string; phone: string }[];
+  sos: SosT | null;
+}
+export interface WatchT {
+  me: string;
+  name: string;
+  phone: string;
+  card: string;
+  checkin: ElderT["status"];
+  checked_at: string | null;
+  sos: SosT | null;
 }
 export interface InboxItem {
   id: number;
@@ -173,6 +227,25 @@ export const cx = {
   checkin: (e: number, t: string, status: "ok" | "help") =>
     call<{ name: string; lang: "ur" | "en"; status: ElderT["status"]; checked_at: string | null; checkin_time: string }>(
       `/api/checkin?e=${e}&t=${encodeURIComponent(t)}&status=${status}`, { method: "POST" }),
+  // elder emergency button + guardians
+  elderProfile: (id: number) => call<ElderProfileT>(`/api/me/elders/${id}/profile`),
+  saveElderProfile: (id: number, b: { pin: string; age: number; conditions: string; medicines: string; allergies: string; blood_group: string }) =>
+    call<ElderProfileT>(`/api/me/elders/${id}/profile`, { method: "PUT", body: JSON.stringify(b) }),
+  addGuardian: (id: number, b: { name: string; relation: string; phone: string; email: string }) =>
+    call<ElderProfileT>(`/api/me/elders/${id}/guardians`, j(b)),
+  removeGuardian: (id: number, gid: number) => call<ElderProfileT>(`/api/me/elders/${id}/guardians/${gid}`, { method: "DELETE" }),
+  familyHandled: (id: number, sos: number) => call<ElderProfileT>(`/api/me/elders/${id}/sos/${sos}/handled`, { method: "POST" }),
+  elderLogin: (phone: string, pin: string) => call<{ e: number; t: string; name: string; lang: "ur" | "en" }>("/api/elder/login", j({ phone, pin })),
+  elderHome: (e: number, t: string) => call<ElderHomeT>(`/api/elder/me?e=${e}&t=${encodeURIComponent(t)}`),
+  sos: (e: number, t: string, where: { lat?: number; lng?: number } = {}) => call<SosT>(`/api/elder/sos?e=${e}&t=${encodeURIComponent(t)}`, j(where)),
+  sosState: (e: number, t: string, id: number) => call<SosT>(`/api/elder/sos/${id}?e=${e}&t=${encodeURIComponent(t)}`),
+  sosLocation: (e: number, t: string, id: number, lat: number, lng: number) =>
+    call<SosT>(`/api/elder/sos/${id}/location?e=${e}&t=${encodeURIComponent(t)}`, j({ lat, lng })),
+  sosRespond: (e: number, t: string, id: number, answer: "okay" | "help") =>
+    call<SosT>(`/api/elder/sos/${id}/respond?e=${e}&t=${encodeURIComponent(t)}&answer=${answer}`, { method: "POST" }),
+  sosCheck: () => call<{ escalated: number }>("/api/sos/check", { method: "POST" }),
+  watch: (g: string) => call<WatchT>(`/api/elder/watch?g=${encodeURIComponent(g)}`),
+  watchHandled: (g: string, sos: number) => call<WatchT>(`/api/elder/watch/handled?g=${encodeURIComponent(g)}&sos_id=${sos}`, { method: "POST" }),
   // inbox + push
   inbox: () => call<InboxItem[]>("/api/me/inbox"),
   inboxRead: () => call<{ ok: boolean }>("/api/me/inbox/read", { method: "POST" }),

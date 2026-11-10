@@ -2426,3 +2426,18 @@ a.sslot:hover {
   width: 160px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line-strong, rgba(150,230,210,.25));
   background: var(--surface, #0b1715); color: inherit; font: inherit; font-size: 0.8125rem;
 }
+
+/* Opening screen: portal chooser */
+.welcome-ph { font-size: 0.875rem; font-weight: 700; color: var(--muted); margin: 10px 0 0; text-transform: uppercase; letter-spacing: 0.08em; }
+.welcome[dir="rtl"] .welcome-ph { text-transform: none; letter-spacing: 0; font-family: var(--urdu); }
+.welcome-portals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.welcome-portals .wp {
+  display: grid; gap: 2px; justify-items: start; padding: 14px 12px; border-radius: 18px; border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.025); color: var(--ink); text-decoration: none; text-align: start; min-height: 96px;
+}
+.welcome-portals .wp span { font-size: 1.5rem; line-height: 1.2; }
+.welcome-portals .wp b { font-size: 0.9875rem; }
+.welcome-portals .wp small { color: var(--muted); font-size: 0.8125rem; }
+.welcome-portals .wp.elder { border-color: rgba(255, 122, 131, 0.55); background: rgba(255, 92, 105, 0.08); }
+.welcome-portals .wp:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.welcome[dir="rtl"] .welcome-portals .wp b, .welcome[dir="rtl"] .welcome-portals .wp small { font-family: var(--urdu); line-height: 1.8; }

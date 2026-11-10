@@ -26,6 +26,12 @@ NEW_COLUMNS = [
     ("notifications", "title_ur", "VARCHAR(200) NOT NULL DEFAULT ''"),
     ("notifications", "body_ur", "TEXT NOT NULL DEFAULT ''"),
     ("push_subs", "lang", "VARCHAR(4) NOT NULL DEFAULT 'ur'"),
+    ("elders", "pin_hash", "VARCHAR(200) NOT NULL DEFAULT ''"),
+    ("elders", "age", "INTEGER NOT NULL DEFAULT 0"),
+    ("elders", "conditions", "VARCHAR(300) NOT NULL DEFAULT ''"),
+    ("elders", "medicines", "VARCHAR(300) NOT NULL DEFAULT ''"),
+    ("elders", "allergies", "VARCHAR(200) NOT NULL DEFAULT ''"),
+    ("elders", "blood_group", "VARCHAR(4) NOT NULL DEFAULT ''"),
 ]
 
 
