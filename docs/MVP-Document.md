@@ -1,11 +1,12 @@
 # Sehat Saathi — صحت ساتھی
 ### MVP Document · TechSoc'26 AI Hackathon · Theme: *AI with Purpose — Building Better Societies*
+*Updated 11 Nov 2026: now built for real hospitals (see section 5)*
 
 | | |
 | --- | --- |
 | **Team** | Muaz Ajmal (solo) · FAST-NUCES Multan |
 | **Focus area** | 03 Local Services & Coordination (Clinics), with 04 Mutual Support (responders, blood donors, family check-ins) |
-| **Live MVP** | https://sehat-saathi-eta.vercel.app/app · staff login: https://sehat-saathi-eta.vercel.app/login · elder app: https://sehat-saathi-eta.vercel.app/elder · **Mystery Card: https://sehat-saathi-eta.vercel.app/report** |
+| **Live MVP** | https://sehat-saathi-eta.vercel.app/app · staff login: https://sehat-saathi-eta.vercel.app/login · elder app: https://sehat-saathi-eta.vercel.app/elder · **Mystery Card: https://sehat-saathi-eta.vercel.app/report** · hospital settings: https://sehat-saathi-eta.vercel.app/desk/settings · owner: https://sehat-saathi-eta.vercel.app/owner |
 | **Type** | Web app: opens in any browser on a phone or laptop, installs on the home screen like an app. One platform for many hospitals. |
 | **Demo video** | `sehat-saathi-demo.mp4` (3 min 49 s): every portal, location + Google Maps, booking + Gmail, elder emergency button, Mystery Card |
 | **Repository** | https://github.com/muazajmal/sehat-saathi |
@@ -42,10 +43,11 @@ get their own **elder app** with one big **HELP** button. **A named doctor appro
 | Family & guardians | `/patient/family` | patient account |
 | Elder app | `/elder` | phone number + 4-digit PIN set by the family; the phone remembers it |
 | Guardian live page | `/elder/watch` | private link sent by Gmail, no login |
-| Hospital desk (doctor + admin) | `/desk`, `/desk/schedule`, `/desk/ambulances`, `/desk/reports`, `/desk/area`, `/desk/blood`, `/desk/team` | phone number + password, per hospital |
+| Hospital desk (doctor + admin) | `/desk`, `/desk/schedule`, `/desk/ambulances`, `/desk/reports`, `/desk/area`, `/desk/blood`, `/desk/team`, **`/desk/settings`** | phone number + password, per hospital |
 | Ambulance driver | `/ambulance/join`, `/ambulance/me`, `/responder` | private link |
 | Blood donor | `/donate` | phone number |
-| Platform owner | `/owner` | owner login |
+| Platform owner | `/owner` (hospitals + demo-requests inbox) | owner login |
+| Clinic that wants Sehat Saathi | **Book a demo** on the website `/` | name, clinic, city, WhatsApp number and **Gmail** |
 
 | User | What they do |
 | --- | --- |
@@ -53,10 +55,10 @@ get their own **elder app** with one big **HELP** button. **A named doctor appro
 | **Family** | Sets up a parent living alone: PIN, medical card and up to 4 more guardians. Daily "I'm okay" check-in; told at once if the parent presses HELP or doesn't answer. |
 | **Elder** | Signs in once with phone number + PIN and gets one big HELP button, read aloud in Urdu. |
 | **Doctor** | Desk sorted by urgency; approves, changes or declines. Every decision is signed with their own name. |
-| **Hospital admin** | Adds doctors, sees the schedule, reports, area health alerts and blood requests for their own hospital only. |
+| **Hospital admin** | Adds doctors, sees the schedule, reports, area health alerts and blood requests for their own hospital only. Sets the hospital's **own name, address, phone, Gmail, opening hours, 24-hour emergency and visit fee**. |
 | **Ambulance driver** | Signs up, is checked by the hospital, gets a private trip page and shares live location. |
 | **Blood donor** | Asked only when a nearby patient needs their group; number shared only after they say yes. |
-| **Platform owner** | Approves or pauses hospitals that apply to join. |
+| **Platform owner** | Approves or pauses hospitals that apply to join, and follows up every **demo request** (call, WhatsApp, email) from new to pilot. |
 
 ## 3. How AI is used (meaningfully, not decoratively)
 
@@ -83,15 +85,34 @@ get their own **elder app** with one big **HELP** button. **A named doctor appro
 7. **First aid for everyone:** `/first-aid`: 8 guides with pictures, captions and voice for deaf, blind and non-reading users.
 8. **Many hospitals:** hospitals apply at `/hospitals/join`; the owner approves them at `/owner`. Each hospital gets its own desk, doctors, staff and patient link (`/patient?h=<hospital>`), and sees only its own data. Patients pick their hospital on the request form.
 9. **Elder emergency button (new):**
-   - Family: `/patient/family` → add a parent → **Set up emergency button** → 4-digit PIN, medical card (age, conditions, medicines, allergies, blood group), up to 4 more guardians (phone and/or Gmail).
-   - Elder: `/elder` → phone number + PIN on a big keypad → one big **HELP** button.
-   - Press HELP: an **urgent case** with the medical card and **GPS location** goes to the hospital desk, and **every guardian** is told at once (in-app, phone notification, Gmail).
-   - The phone asks **"Are you okay?"** for **1 minute**, with a countdown, voice and vibration, and keeps the screen on.
-   - **No answer in 1 minute:** every guardian gets "pressed the emergency button and did not respond, please check on them now", with a Google Maps link, and the desk case is flagged. Guardians without the app get a private live page.
-   - The elder can still answer later (**I'm okay** or **I need an ambulance**), and a guardian can mark **I'm with them**; everyone is told.
+    - Family: `/patient/family` → add a parent → **Set up emergency button** → 4-digit PIN, medical card (age, conditions, medicines, allergies, blood group), up to 4 more guardians (phone and/or Gmail).
+    - Elder: `/elder` → phone number + PIN on a big keypad → one big **HELP** button.
+    - Press HELP: an **urgent case** with the medical card and **GPS location** goes to the hospital desk, and **every guardian** is told at once (in-app, phone notification, Gmail).
+    - The phone asks **"Are you okay?"** for **1 minute**, with a countdown, voice and vibration, and keeps the screen on.
+    - **No answer in 1 minute:** every guardian gets "pressed the emergency button and did not respond, please check on them now", with a Google Maps link, and the desk case is flagged. Guardians without the app get a private live page.
+    - The elder can still answer later (**I'm okay** or **I need an ambulance**), and a guardian can mark **I'm with them**; everyone is told.
 10. **Feedback after the visit:** the doctor marks the visit done → n8n sends a **Gmail** with a *Give feedback* button → 4 questions (rating, was the summary clear, would you recommend, comments) → answers saved in n8n and shown on the Clinic Desk.
 
-## 5. Responsible AI and safety
+## 5. Built for real hospitals (new, 11 Nov)
+
+Most hackathon projects stop at the patient screen. Sehat Saathi also runs the **hospital and business side**, so a
+hospital could start using it tomorrow.
+
+| Upgrade | What it does | Try it |
+| --- | --- | --- |
+| **Hospital settings** | The hospital admin sets the hospital's name, address, reception phone and Gmail, opening hours, **24-hour emergency** and its **own visit fee**. A live **"What patients see"** card previews it, and the patient link can be copied for WhatsApp, a QR at reception or Facebook. The fee is used when staff add a visit charge, and published prices follow it (`/api/prices?h=<hospital>`). | *Demo admin* → **Hospital** (`/desk/settings`) |
+| **Book a demo with Gmail** | The website's *Book a demo* form asks for the clinic's **Gmail**, checks it is a real address, and sends an instant **confirmation email in English and Urdu**. | Website → *Book a demo* |
+| **Demo-requests inbox** | Every demo request appears on the owner page with **Call, WhatsApp and Email** buttons and moves **new → contacted → pilot → closed**, so no interested clinic is lost. | `/owner` |
+| **Calendars that never run dry** | Every active doctor in every hospital always has **a week of bookable appointment times**, renewed automatically (on start-up and at most hourly when the schedule is opened). Switched-off doctors are skipped; renewing twice never creates duplicates. | *Demo admin* → **Schedule** |
+| **Runs on any phone** | The whole hospital desk fits small phone screens; the menu slides sideways inside the bar. | Open `/desk` on a phone |
+| **Never leaves a patient stuck** | A friendly error screen in English and Urdu offers **Try again** and a one-tap **Call 1122**; a loading screen replaces blank pages. | (shown if any screen fails) |
+| **Security and sharing** | Standard security headers on every page (no sniffing, no framing by other sites, camera, microphone and location only for Sehat Saathi itself); staff pages hidden from search engines; a **branded preview card** when the link is shared on WhatsApp or LinkedIn; sitemap for search. | Share the link in WhatsApp |
+
+**How Sehat Saathi earns:** hospitals start with a **free 30-day pilot**, then a monthly plan: **Clinic PKR 9,900**,
+**Hospital PKR 49,000**, or a custom price for a hospital network. Patients are never charged before they are helped,
+and staff can waive any fee.
+
+## 6. Responsible AI and safety
 
 - **The AI never diagnoses or prescribes.** It only sorts, summarises and *holds* a slot.
 - **A named doctor approves every booking.** Approving is the only way a slot becomes booked.
@@ -101,10 +122,11 @@ get their own **elder app** with one big **HELP** button. **A named doctor appro
 - **Human approval for community alerts:** area health notices and blood requests go out only after staff approve them; a donor's number is shared only after they say yes.
 - **Privacy:** each hospital sees only its own patients; patients see only their own requests. Passwords are hashed, logins expire after 7 days, rate limits stop abuse, reports carry no names or numbers, and anyone can **delete their account and data**.
 - **Elder button safety:** pressing HELP never waits for anything: the alarm is sent first, location is added after. The 1-minute check runs on the elder's phone, on every guardian's screen, on the hospital desk and every 15 minutes on the server, so it still happens if the elder's phone goes quiet. Each alert is sent only once. The elder's PIN is hashed and wrong PINs are rate-limited.
+- **Hospital settings are admin-only:** doctors and patients cannot change a hospital's details or fees; the server checks the role on every save, and emails are validated.
 - **Audit trail:** every AI suggestion and human decision is logged with who and when.
 - **Free for patients:** asking for help is always free; any transport or visit fee is shown only *after* the service, and staff can waive it.
 
-## 6. Architecture
+## 7. Architecture
 
 ```
 Patient (app / voice / WhatsApp / Telegram)
@@ -112,7 +134,7 @@ Patient (app / voice / WhatsApp / Telegram)
         ▼
 Next.js web app (installable) ──► FastAPI backend ──► Gemini 2.5 Flash (voice, summary, reply, prescriptions, alert drafts)
  /app /patient /login /elder     │   + danger-sign rules (safer one wins)
- /desk /owner /first-aid         │   elder SOS: 1-minute no-response rule ──► guardians (in-app, push, Gmail)
+ /desk /desk/settings /owner     │   elder SOS: 1-minute no-response rule ──► guardians (in-app, push, Gmail)
  /ambulance /donate              ▼   GPS ──► hospital + responder ──► Google Maps links
                           Postgres (Neon)  ──►  n8n: urgent alerts, ambulance trips, Gmail booking emails
                                  ▲
@@ -120,9 +142,9 @@ Next.js web app (installable) ──► FastAPI backend ──► Gemini 2.5 Fla
 ```
 
 **Stack (all free tiers, no card):** Next.js, FastAPI, Gemini 2.5 Flash, Neon Postgres, Vercel, n8n, GitHub Actions, web push.
-**85 automated backend tests** (triage, safety rules, logins, hospitals kept apart, dispatch, reminders, emails, reports, password reset, data deletion, elder PIN sign-in, the 1-minute no-response alert, guardian alerts, Report Samjhao summary and meaning guard). The elder-button database upgrade was tested on Postgres against a copy of the live schema before going live.
+**86 automated backend tests** (hospital settings and fees, demo requests, triage, safety rules, logins, hospitals kept apart, dispatch, reminders, emails, reports, password reset, data deletion, elder PIN sign-in, the 1-minute no-response alert, guardian alerts, Report Samjhao summary and meaning guard). The elder-button database upgrade was tested on Postgres against a copy of the live schema before going live.
 
-## 7. Mystery Card feature
+## 8. Mystery Card feature
 
 **Card received:** *AI Summary Button.* 1) Pick long content, 2) choose summary style, 3) generate summary, 4) keep original meaning.
 
@@ -150,7 +172,7 @@ the button never fails. Tested in `backend/tests/test_summary.py`.
 **Files:** `backend/app/summary.py`, `frontend/components/ReportSamjhao.tsx`, `frontend/app/report/page.tsx`;
 the earlier standalone page `docs/mystery-card/report-samjhao.html` and `n8n/README.md` (feedback workflow).
 
-## 8. Impact
+## 9. Impact
 
 - Patients who can't read or type can still get help, in their own language.
 - Urgent cases reach a doctor in minutes; families get first-aid guidance while help is coming.
@@ -158,12 +180,13 @@ the earlier standalone page `docs/mystery-card/report-samjhao.html` and `n8n/REA
 - Communities get early outbreak notices, a local blood donor network, medicine reminders and daily check-ins for elders living alone.
 - An older person who lives alone is never more than one tap and one minute away from their family knowing something is wrong.
 - Patients can finally understand their own lab reports, in Urdu, without any number being changed.
+- Hospitals can set themselves up and clinics that book a demo are followed up to a pilot, so Sehat Saathi can grow without a big team.
 - **Scale path:** one clinic pilot in Multan, then Basic Health Units and government hospitals across Punjab, linked to the Sehat Card.
 
-## 9. Limits and next steps
+## 10. Limits and next steps
 
 - Responders and the hospital list are demo data for Multan.
 - WhatsApp needs a verified business number; the app, website and Telegram bot work today.
 - Triage has automated tests but no clinical validation yet; next is a clinic pilot with doctor feedback.
 - The elder app's "while you wait" lines are Dr. Sheryar's reviewed heart steps reworded for the patient; he will re-check the wording.
-- **We keep improving Sehat Saathi step by step** with feedback from doctors and patients. Next: sign language for deaf patients, WhatsApp once the business number is verified, Report Samjhao for discharge slips and prescriptions, more languages and more hospitals.
+- **We keep improving Sehat Saathi step by step** with feedback from doctors and patients. Next: online payments for hospital plans, sign language for deaf patients, WhatsApp once the business number is verified, Report Samjhao for discharge slips and prescriptions, more languages and more hospitals.

@@ -24,6 +24,8 @@ Elders living alone get a one-button HELP app that alerts guardians if they don'
 Then the patient can ask for an appointment with the suggested specialist in one tap. Without an AI key the summary
 falls back to copying the flagged result lines word for word, so it never fails in a demo.
 
+**MVP document:** [docs/MVP-Document.md](docs/MVP-Document.md) · [PDF](docs/Sehat-Saathi-MVP-Document.pdf)
+
 ## Built for real hospitals
 
 | For | What they get |
